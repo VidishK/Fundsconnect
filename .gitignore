@@ -1,0 +1,13 @@
+.mfapi_schemes.json
+.amfi_map.json
+.nav_cache.json
+.holdings_upload_meta.json
+.holdings_fetch_meta.json
+.finapi_fund_map.json
+.stock_pe_cache.json
+.pe_enrich_meta.json
+holdings.xlsx.bak
+.docx_vendor/
+__pycache__/
+*.pyc
+.DS_Store

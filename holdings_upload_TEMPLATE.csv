@@ -1,0 +1,5 @@
+fund,company,weight,isin,sector,pe,pb
+HDFC Flexi Cap Fund,Reliance Industries,5.83,INE002A01018,Energy & Telecom,25.4,2.1
+HDFC Flexi Cap Fund,ICICI Bank,5.21,INE090A01021,BFSI,17.1,2.9
+Motilal Oswal Large Cap Fund,Reliance Industries,5.13,INE002A01018,Energy & Telecom,25.4,2.1
+# ... one row per stock per fund. weight = % of AUM (e.g. 5.83 means 5.83%). pe/pb/isin/sector optional,,,,,,

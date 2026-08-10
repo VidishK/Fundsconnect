@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fundsconnect — Quantitative Fund Research</title>
+<style>
+  :root{
+    --navy:#13294b; --teal:#1f8a8a; --gold:#c8961e;
+    --bg:#f6f7f9; --card:#ffffff; --ink:#1a2230; --muted:#6b7686;
+    --line:#e3e7 ; --line:#e3e7ec; --good:#1f8a5a; --bad:#c0392b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);font-size:14px}
+  header{background:var(--navy);color:#fff;padding:18px 26px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.2px}
+  header .tag{font-size:12px;color:#aebnd;color:#a9b6cc}
+  .wrap{max-width:1280px;margin:0 auto;padding:22px}
+  .controls{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end;background:var(--card);
+            border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:18px}
+  .ctl label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px}
+  .modes{display:flex;gap:6px}
+  .modes button{border:1px solid var(--line);background:#fff;padding:8px 14px;border-radius:8px;cursor:pointer;
+                font-weight:600;color:var(--ink)}
+  .modes button.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .dialbox{min-width:260px}
+  .dialbox input[type=range]{width:100%}
+  .dialrow{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+  select,input[type=number]{padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:13px}
+  .meta{font-size:12px;color:var(--muted);margin:0 0 10px}
+  .tablecard{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:auto}
+  table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+  th,td{padding:9px 11px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+  th{position:sticky;top:0;background:#eef1f5;font-size:11px;text-transform:uppercase;letter-spacing:.4px;
+     color:var(--muted);cursor:pointer;user-select:none}
+  th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--card);z-index:1}
+  th:first-child{z-index:2;background:#eef1f5}
+  td.name{font-weight:600;max-width:240px;white-space:normal}
+  td.amc{font-size:12px;color:var(--muted)}
+  .rank{display:inline-block;width:22px;color:var(--muted);font-weight:700}
+  .score{font-weight:800;color:var(--navy)}
+  .bar{height:6px;border-radius:4px;background:linear-gradient(90deg,var(--teal),var(--navy));margin-top:3px}
+  .good{color:var(--good)} .bad{color:var(--bad)}
+  .group-Return th{}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:10px 2px}
+  .pill{padding:2px 8px;border-radius:20px;background:#eef1f5}
+  .tabs{display:flex;gap:8px;margin-bottom:14px}
+  .tabs button{border:none;background:none;padding:8px 4px;font-weight:700;color:var(--muted);cursor:pointer;
+               border-bottom:2px solid transparent;font-size:14px}
+  .tabs button.active{color:var(--navy);border-color:var(--gold)}
+  .gloss{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+  .gcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .gcard h3{margin:0 0 4px;font-size:14px}
+  .gcard .dir{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+  .gcard .dir.max{color:var(--good)} .gcard .dir.min{color:var(--bad)}
+  .gcard .formula{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#f1f4f8;border-radius:7px;
+                  padding:8px 10px;margin:8px 0;font-size:12px;overflow:auto}
+  .gcard p{margin:6px 0;color:#36404f;line-height:1.45}
+  .gcard .range{font-size:12px;color:var(--muted)}
+  .hide{display:none}
+  footer{color:var(--muted);font-size:11px;text-align:center;padding:24px;line-height:1.6}
+</style>
+</head>
+<body>
+<header>
+  <h1>Fundsconnect</h1>
+  <span class="tag">Quantitative Fund Research · VaR · Sharpe · risk-tilted scoring</span>
+</header>
+
+<div class="wrap">
+  <div class="tabs">
+    <button id="tab-explorer" class="active" onclick="showTab('explorer')">Fund Explorer</button>
+    <button id="tab-formulas" onclick="showTab('formulas')">Metrics &amp; Formulas</button>
+  </div>
+
+  <!-- EXPLORER -->
+  <div id="view-explorer">
+    <div class="controls">
+      <div class="ctl">
+        <label>Strategy</label>
+        <div class="modes" id="modes">
+          <button data-mode="balanced" class="active">Balanced</button>
+          <button data-mode="aggressive">Aggressive · more risk</button>
+          <button data-mode="dial">Risk dial</button>
+        </div>
+      </div>
+      <div class="ctl dialbox hide" id="dialwrap">
+        <label>Risk dial — Balanced &rarr; Aggressive</label>
+        <input type="range" id="dial" min="0" max="100" value="50">
+        <div class="dialrow"><span>Balanced</span><span id="dialval">t = 0.50</span><span>Aggressive</span></div>
+      </div>
+      <div class="ctl">
+        <label>Category</label>
+        <select id="category"></select>
+      </div>
+      <div class="ctl">
+        <label>5-yr track record only</label>
+        <select id="minhist"><option value="">No filter</option><option value="r5">Require 5Y history</option></select>
+      </div>
+      <div class="ctl">
+        <label>Show top N</label>
+        <input type="number" id="topn" min="1" placeholder="all" style="width:90px">
+      </div>
+    </div>
+
+    <p class="meta" id="meta">Loading…</p>
+    <p class="meta" id="datastamp" style="color:var(--teal)"></p>
+    <div class="legend">
+      <span class="pill">Green = stronger</span><span class="pill">Red = weaker / more risk</span>
+      <span class="pill">Click any column header to sort</span>
+      <span class="pill">VaR / SD / Beta / DownCap: lower is better</span>
+    </div>
+    <div class="tablecard"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+  </div>
+
+  <!-- FORMULAS -->
+  <div id="view-formulas" class="hide">
+    <p class="meta">Every metric the scoring algorithm uses, with the exact formula and optimisation direction. These are served live from the backend at <code>/api/glossary</code>.</p>
+    <div class="gloss" id="gloss"></div>
+  </div>
+</div>
+
+<footer>
+  Fundsconnect · quantitative screening engine. Figures are computed deterministically from the dataset;
+  VaR is parametric (from SD) pending the daily-NAV pipeline.<br>
+  For research and education only — not investment advice. Mutual fund investments are subject to market risks.
+</footer>
+
+<script>
+const API = "";
+let MODE = "balanced", DIAL = 0.5, GLOSS = {}, ROWS = [], SORT = {key:"score", dir:-1};
+
+// columns: key, label, group, decimals, lowerIsBetter(for colour)
+const COLS = [
+  ["score","Score","",1,false],
+  ["cagr","CAGR",".",2,false],
+  ["r1","1Y",".",2,false],["r3","3Y",".",2,false],["r5","5Y",".",2,false],
+  ["r7","7Y",".",2,false],["r10","10Y",".",2,false],
+  ["sharpe","Sharpe",".",2,false],["sortino","Sortino",".",2,false],
+  ["infratio","Info R.",".",2,false],
+  ["upcap","UpCap",".",1,false],["downcap","DownCap",".",1,true],
+  ["beta","Beta",".",2,true],["sd","SD",".",2,true],
+  ["var","VaR",".",1,true],["var95_annual","VaR(model)",".",1,true],
+  ["pe","P/E",".",1,true],["pb","P/B",".",2,true],
+  ["ter","TER",".",2,true],["aum","AUM",".",0,false],
+];
+
+function showTab(t){
+  document.getElementById("view-explorer").classList.toggle("hide", t!=="explorer");
+  document.getElementById("view-formulas").classList.toggle("hide", t!=="formulas");
+  document.getElementById("tab-explorer").classList.toggle("active", t==="explorer");
+  document.getElementById("tab-formulas").classList.toggle("active", t==="formulas");
+}
+
+document.querySelectorAll("#modes button").forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll("#modes button").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    MODE=b.dataset.mode;
+    document.getElementById("dialwrap").classList.toggle("hide", MODE!=="dial");
+    load();
+  };
+});
+document.getElementById("dial").oninput=e=>{
+  DIAL=e.target.value/100;
+  document.getElementById("dialval").textContent="t = "+DIAL.toFixed(2);
+  if(MODE==="dial") load();
+};
+document.getElementById("minhist").onchange=load;
+document.getElementById("category").onchange=load;
+
+async function loadCategories(){
+  const sel=document.getElementById("category");
+  try{
+    const r=await fetch(API+"/api/health"); const d=await r.json();
+    const cats=d.categories||[];
+    sel.innerHTML=`<option value="">All categories</option>`+
+      cats.map(c=>`<option value="${c}">${c}</option>`).join("");
+  }catch(e){
+    sel.innerHTML=`<option value="">All categories</option>`;
+  }
+}
+document.getElementById("topn").oninput=()=>{clearTimeout(window._t);window._t=setTimeout(load,300);};
+
+function qs(){
+  const n=document.getElementById("topn").value;
+  const mh=document.getElementById("minhist").value;
+  const cat=document.getElementById("category").value;
+  let p=[];
+  if(n) p.push("n="+n);
+  if(cat) p.push("category="+encodeURIComponent(cat));
+  if(MODE==="dial"){ return "/api/rank/dial?t="+DIAL+(p.length?"&"+p.join("&"):""); }
+  if(mh) p.push("min_history="+mh);
+  return "/api/rank?profile="+MODE+(p.length?"&"+p.join("&"):"");
+}
+
+async function load(){
+  const meta=document.getElementById("meta");
+  try{
+    const r=await fetch(API+qs());
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const d=await r.json();
+    ROWS=d.funds||[];
+    const cat=document.getElementById("category").value||"All categories";
+    meta.textContent=(d.profile_name||"")+" · "+cat+" · "+ROWS.length+" funds"+
+      (MODE==="dial"?" · dial t="+DIAL.toFixed(2):"");
+    sortRows(); render();
+  }catch(e){
+    meta.textContent="Couldn't load data ("+e.message+"). Is the server running? Try restarting it.";
+  }
+}
+
+function sortRows(){
+  ROWS.sort((a,b)=>{
+    const x=a[SORT.key], y=b[SORT.key];
+    if(x==null) return 1; if(y==null) return -1;
+    return (x<y?-1:x>y?1:0)*SORT.dir;
+  });
+}
+
+function colour(col,val,vals){
+  if(val==null) return "";
+  const nums=vals.filter(v=>v!=null);
+  if(nums.length<3) return "";
+  const lo=Math.min(...nums), hi=Math.max(...nums);
+  if(hi===lo) return "";
+  let p=(val-lo)/(hi-lo); if(col[4]) p=1-p;   // lowerIsBetter -> invert
+  if(p>=0.66) return "good"; if(p<=0.33) return "bad"; return "";
+}
+
+function render(){
+  const thead=document.querySelector("#tbl thead");
+  const tbody=document.querySelector("#tbl tbody");
+  thead.innerHTML="<tr>"+["#","Fund"].map(h=>`<th>${h}</th>`).join("")+
+    COLS.map(c=>`<th data-k="${c[0]}">${c[1]}</th>`).join("")+"</tr>";
+  thead.querySelectorAll("th[data-k]").forEach(th=>{
+    th.onclick=()=>{const k=th.dataset.k;SORT.dir=(SORT.key===k?-SORT.dir:-1);SORT.key=k;sortRows();render();};
+  });
+  const maxScore=Math.max(...ROWS.map(r=>r.score||0));
+  tbody.innerHTML=ROWS.map((r,i)=>{
+    const cells=COLS.map(c=>{
+      let v=r[c[0]];
+      const cls=colour(c,v,ROWS.map(x=>x[c[0]]));
+      let disp = v==null?"<span style='color:#c3c9d2'>–</span>":Number(v).toFixed(c[3]);
+      if(c[0]==="score" && v!=null){
+        return `<td><span class="score">${Number(v).toFixed(1)}</span>
+                <div class="bar" style="width:${Math.max(8,(v/maxScore)*100)}%"></div></td>`;
+      }
+      return `<td class="${cls}">${disp}</td>`;
+    }).join("");
+    return `<tr><td><span class="rank">${i+1}</span></td>
+      <td class="name">${r.name}<div class="amc">${r.amc||""}${r.category?" · "+r.category:""}</div></td>${cells}</tr>`;
+  }).join("");
+}
+
+async function loadGlossary(){
+  const r=await fetch(API+"/api/glossary"); const d=await r.json(); GLOSS=d.metrics;
+  const order=["Return","Risk-adjusted","Capture","Risk","Valuation","Cost","Size"];
+  const keys=Object.keys(GLOSS).sort((a,b)=>
+    order.indexOf(GLOSS[a].group)-order.indexOf(GLOSS[b].group));
+  document.getElementById("gloss").innerHTML=keys.map(k=>{
+    const g=GLOSS[k]; const dir=g.direction.startsWith("max")?"max":g.direction.startsWith("min")?"min":"";
+    return `<div class="gcard">
+      <h3>${g.label} <span class="pill" style="font-size:10px">${g.group}</span></h3>
+      <div class="dir ${dir}">${g.direction}</div>
+      <div class="formula">${g.formula}</div>
+      <p>${g.meaning}</p>
+      <div class="range">Reference: ${g.range}</div></div>`;
+  }).join("");
+}
+
+// ---- auto-refresh: poll the data file's modified-time; reload on change ----
+let LAST_TS = null;
+async function pollData(){
+  try{
+    const r = await fetch(API+"/api/data-status"); const d = await r.json();
+    const stamp = document.getElementById("datastamp");
+    stamp.textContent = "Live data: "+d.source+" · updated "+d.updated_at.replace("T"," ");
+    if(LAST_TS !== null && d.updated_ts !== LAST_TS){
+      stamp.textContent += "  — change detected, refreshing…";
+      await load();                       // re-pull rankings with new data
+    }
+    LAST_TS = d.updated_ts;
+  }catch(e){ /* server not up yet */ }
+}
+
+(async()=>{ await loadCategories(); load(); loadGlossary(); pollData(); })();
+setInterval(pollData, 5000);              // check every 5 seconds
+</script>
+</body>
+</html>

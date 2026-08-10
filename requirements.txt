@@ -1,0 +1,8 @@
+pandas>=2.0
+numpy>=1.24
+fastapi>=0.110
+uvicorn[standard]>=0.27
+openpyxl>=3.1
+python-multipart>=0.0.9
+yfinance>=0.2.40
+certifi>=2024.0.0

@@ -1,0 +1,2715 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fundsconnect — Quantitative Fund Research</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+/* ============================ THEME TOKENS ============================ */
+:root{
+  --accent:        oklch(0.66 0.17 274);     /* electric indigo */
+  --accent-soft:   oklch(0.66 0.17 274 / .14);
+  --accent-line:   oklch(0.66 0.17 274 / .35);
+  --gold:          oklch(0.80 0.12 86);       /* best-in-class */
+  --gold-soft:     oklch(0.80 0.12 86 / .12);
+  --good:          oklch(0.74 0.12 158);      /* calm green */
+  --bad:           oklch(0.70 0.13 38);       /* muted amber/red */
+  --grade-strong:  oklch(0.74 0.12 158);
+  --grade-weak:    oklch(0.70 0.13 38);
+  --radius: 4px;
+  --col-fund-w: 280px;
+  --transition: 320ms cubic-bezier(.22,.61,.36,1);
+}
+:root[data-theme="dark"]{
+  --bg:        oklch(0.17 0.018 264);
+  --bg-2:      oklch(0.20 0.020 264);
+  --panel:     oklch(0.215 0.020 264);
+  --panel-2:   oklch(0.245 0.020 264);
+  --ink:       oklch(0.93 0.012 264);
+  --ink-2:     oklch(0.80 0.014 264);
+  --muted:     oklch(0.62 0.018 264);
+  --faint:     oklch(0.46 0.018 264);
+  --line:      oklch(1 0 0 / .085);
+  --line-2:    oklch(1 0 0 / .045);
+  --hover:     oklch(1 0 0 / .035);
+  --grade-bg-l: 0.30;
+  --grain-op: .035;
+}
+:root[data-theme="light"]{
+  --bg:        oklch(0.965 0.006 86);
+  --bg-2:      oklch(0.98 0.004 86);
+  --panel:     oklch(0.995 0.002 86);
+  --panel-2:   oklch(0.975 0.004 86);
+  --ink:       oklch(0.24 0.020 264);
+  --ink-2:     oklch(0.36 0.020 264);
+  --muted:     oklch(0.50 0.018 264);
+  --faint:     oklch(0.64 0.014 264);
+  --line:      oklch(0.24 0.02 264 / .14);
+  --line-2:    oklch(0.24 0.02 264 / .07);
+  --hover:     oklch(0.24 0.02 264 / .035);
+  --grade-bg-l: 0.86;
+  --grain-op: .025;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,sans-serif;
+  font-size:13px;
+  line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+  letter-spacing:.005em;
+  min-height:100vh;
+  position:relative;
+}
+/* film-grain overlay */
+body::before{
+  content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;
+  opacity:var(--grain-op);mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-feature-settings:"tnum" 1;font-variant-numeric:tabular-nums lining-nums}
+.num{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums lining-nums;font-weight:500}
+.serif{font-family:"Newsreader",Georgia,serif}
+::selection{background:var(--accent-soft);color:var(--ink)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+/* ============================ HEADER ============================ */
+header.topbar{
+  position:sticky;top:0;z-index:60;
+  display:flex;align-items:center;gap:28px;
+  padding:0 26px;height:60px;
+  background:color-mix(in oklch, var(--bg) 86%, transparent);
+  backdrop-filter:blur(14px) saturate(1.4);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:baseline;gap:11px;flex:none}
+.brand .mark{
+  font-family:"Newsreader",serif;font-weight:600;font-size:23px;letter-spacing:-.01em;
+  color:var(--ink);
+}
+.brand .mark b{color:var(--accent);font-weight:600}
+.brand .tag{
+  font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--faint);padding-bottom:2px;
+}
+.topbar .spacer{flex:1}
+/* live-data badge */
+.livebadge{
+  display:flex;align-items:center;gap:9px;
+  padding:6px 12px 6px 10px;border:1px solid var(--line);border-radius:100px;
+  background:var(--panel);cursor:default;transition:border-color var(--transition),background var(--transition);
+}
+.livebadge.flash{animation:badgeflash 1.1s ease}
+@keyframes badgeflash{
+  0%{border-color:var(--good);background:color-mix(in oklch,var(--good) 22%,var(--panel))}
+  100%{border-color:var(--line);background:var(--panel)}
+}
+.livebadge .dot{width:7px;height:7px;border-radius:50%;background:var(--good);position:relative;flex:none}
+.livebadge .dot::after{content:"";position:absolute;inset:-4px;border-radius:50%;background:var(--good);opacity:.35;animation:pulse 2.4s ease-out infinite}
+@keyframes pulse{0%{transform:scale(.6);opacity:.5}100%{transform:scale(2.4);opacity:0}}
+.livebadge .lb-txt{display:flex;flex-direction:column;line-height:1.25}
+.livebadge .lb-src{font-size:10.5px;font-weight:600;color:var(--ink-2);font-family:"IBM Plex Mono",monospace}
+.livebadge .lb-time{font-size:9px;color:var(--muted);font-family:"IBM Plex Mono",monospace;letter-spacing:.02em}
+.navbadge{
+  display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:var(--radius);
+  border:1px solid var(--line);background:var(--panel);font-family:"IBM Plex Mono",monospace;
+}
+.navbadge .nb-label{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-weight:600}
+.navbadge .nb-val{font-size:11.5px;font-weight:600;color:var(--good)}
+.navbadge.is-loading .nb-val{color:var(--muted)}
+.navbadge.is-done .nb-val{color:var(--good)}
+.fund-nav{
+  display:inline-block;margin-top:2px;font-family:"IBM Plex Mono",monospace;
+  font-size:11px;font-weight:600;color:var(--good);letter-spacing:.01em;
+}
+.fund-nav.is-loading{color:var(--faint);font-weight:500}
+.fund-nav .nav-date{color:var(--faint);font-weight:500;margin-left:6px;font-size:9.5px}
+
+.iconbtn{
+  display:flex;align-items:center;justify-content:center;width:36px;height:36px;
+  border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);
+  color:var(--ink-2);cursor:pointer;transition:all 160ms ease;flex:none;
+}
+.iconbtn:hover{border-color:var(--accent-line);color:var(--ink);background:var(--panel-2)}
+.iconbtn svg{width:17px;height:17px}
+
+/* ============================ CONTROLS ============================ */
+.controls{
+  padding:22px 26px 16px;
+  border-bottom:1px solid var(--line);
+  display:grid;
+  grid-template-columns:minmax(180px,1fr) auto minmax(260px,1.1fr);
+  gap:26px 34px;align-items:end;
+}
+.ctl-block{display:flex;flex-direction:column;gap:9px;min-width:0}
+.ctl-label{
+  font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--faint);display:flex;align-items:center;gap:7px;
+}
+.ctl-label .hint{color:var(--faint);font-weight:400;text-transform:none;letter-spacing:.02em;font-family:"IBM Plex Sans",sans-serif;font-size:10.5px}
+
+/* category select */
+.cat-select{position:relative;display:inline-flex}
+.cat-select select{
+  appearance:none;background:var(--panel);color:var(--ink);
+  border:1px solid var(--line);border-radius:var(--radius);
+  padding:9px 38px 9px 13px;font-family:"IBM Plex Sans",sans-serif;font-size:13px;font-weight:600;
+  cursor:pointer;width:100%;transition:border-color 160ms;
+}
+.cat-select select:hover{border-color:var(--accent-line)}
+.cat-select .chev{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted)}
+
+/* segmented profile control */
+.segment{
+  display:flex;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--radius);padding:3px;gap:2px;position:relative;
+}
+.segment button{
+  appearance:none;border:none;background:transparent;cursor:pointer;
+  padding:8px 15px;border-radius:3px;font-family:"IBM Plex Sans",sans-serif;
+  font-size:12px;font-weight:600;color:var(--muted);position:relative;z-index:2;
+  transition:color 220ms ease;white-space:nowrap;letter-spacing:.01em;
+}
+.segment button .sub{display:block;font-family:"IBM Plex Mono",monospace;font-size:8px;letter-spacing:.08em;color:var(--faint);font-weight:400;margin-top:1px;transition:color 220ms}
+.segment button[aria-pressed="true"]{color:var(--bg)}
+.segment button[aria-pressed="true"] .sub{color:color-mix(in oklch,var(--bg) 70%,var(--accent))}
+.segment .glider{
+  position:absolute;top:3px;bottom:3px;left:0;border-radius:3px;
+  background:var(--accent);z-index:1;width:0;
+  transition:left var(--transition),width var(--transition),opacity 180ms;
+  box-shadow:0 1px 8px var(--accent-soft);
+}
+.segment.dial-active .glider{opacity:0}
+.segment.dial-active button[aria-pressed="true"]{color:var(--muted)}
+.segment.dial-active button[aria-pressed="true"] .sub{color:var(--faint)}
+
+/* risk dial */
+.dial-wrap{display:flex;flex-direction:column;gap:8px}
+.dial-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.dial-tval{font-family:"Newsreader",serif;font-size:21px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
+.dial-tval small{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--faint);font-weight:400;margin-left:2px}
+.dial-name{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:500}
+.dial-track-wrap{position:relative;padding:6px 0}
+input[type=range].dial{
+  -webkit-appearance:none;appearance:none;width:100%;height:3px;border-radius:3px;
+  background:linear-gradient(90deg,var(--accent) 0%,var(--accent) var(--fill,50%),var(--line) var(--fill,50%));
+  cursor:pointer;margin:0;
+}
+input[type=range].dial::-webkit-slider-thumb{
+  -webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+  background:var(--panel);border:2px solid var(--accent);cursor:grab;
+  box-shadow:0 2px 10px oklch(0 0 0 / .35),inset 0 0 0 3px var(--bg);
+  transition:transform 120ms,box-shadow 120ms;margin-top:-1px;
+}
+input[type=range].dial::-webkit-slider-thumb:active{cursor:grabbing;transform:scale(1.12)}
+input[type=range].dial::-moz-range-thumb{
+  width:20px;height:20px;border-radius:50%;background:var(--panel);border:2px solid var(--accent);
+  box-shadow:0 2px 10px oklch(0 0 0 / .35),inset 0 0 0 3px var(--bg);cursor:grab;
+}
+.dial-ends{display:flex;justify-content:space-between;font-family:"IBM Plex Mono",monospace;font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-top:3px}
+.dial-desc{font-size:11px;color:var(--muted);line-height:1.4;max-width:44ch}
+
+/* filter row */
+.filterbar{
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  padding:11px 26px;border-bottom:1px solid var(--line);
+  background:var(--bg-2);
+}
+.filterbar .group{display:flex;align-items:center;gap:9px}
+.filterbar .meta{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--muted);letter-spacing:.04em}
+.filterbar .meta b{color:var(--ink-2);font-weight:600}
+.checkbox{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;font-size:11.5px;color:var(--ink-2)}
+.checkbox input{position:absolute;opacity:0;width:0;height:0}
+.checkbox .box{width:15px;height:15px;border:1px solid var(--line);border-radius:3px;background:var(--panel);display:flex;align-items:center;justify-content:center;transition:all 140ms}
+.checkbox input:checked + .box{background:var(--accent);border-color:var(--accent)}
+.checkbox .box svg{width:11px;height:11px;color:var(--bg);opacity:0;transition:opacity 140ms}
+.checkbox input:checked + .box svg{opacity:1}
+.topn{display:flex;align-items:center;gap:0;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.topn button{appearance:none;border:none;background:var(--panel);color:var(--muted);cursor:pointer;padding:5px 11px;font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:500;transition:all 140ms;border-right:1px solid var(--line-2)}
+.topn button:last-child{border-right:none}
+.topn button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.topn button:hover{color:var(--ink)}
+.filterbar .spacer{flex:1}
+.viewtoggle{display:flex;gap:0;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.viewtoggle button{appearance:none;border:none;background:var(--panel);color:var(--muted);cursor:pointer;padding:6px 14px;font-size:11.5px;font-weight:600;transition:all 140ms;border-right:1px solid var(--line-2);display:flex;align-items:center;gap:6px}
+.viewtoggle button:last-child{border-right:none}
+.viewtoggle button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.viewtoggle button svg{width:13px;height:13px}
+
+/* overlap view — FundLens layout */
+#overlapView{display:none;height:calc(100vh - 58px);overflow:hidden}
+.ov-shell{display:flex;height:100%;min-height:0}
+.ov-side{
+  width:282px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;min-height:0;
+}
+.ov-side-hdr{
+  padding:12px 16px 8px;font-size:11px;font-weight:700;color:var(--faint);
+  letter-spacing:.08em;text-transform:uppercase;
+}
+.ov-side-search{padding:0 12px 8px}
+.ov-side-search input{
+  width:100%;box-sizing:border-box;padding:7px 10px;border-radius:6px;
+  border:1px solid var(--line);background:var(--panel-2);color:var(--ink);
+  font-size:12px;font-family:inherit;
+}
+.ov-side-search input::placeholder{color:var(--faint)}
+.ov-side-search input:focus{outline:none;border-color:var(--accent-line)}
+.ov-selected-mini{
+  padding:0 12px 8px;display:flex;flex-wrap:wrap;gap:4px;max-height:72px;overflow:auto;
+}
+.ov-selected-mini:empty{display:none}
+.ov-sel-chip{
+  font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;
+  background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-line);
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.ov-side-list{flex:1;overflow:auto;padding-bottom:8px}
+.ov-sc-funds{min-width:200px;flex:1.4 1 200px}
+.ov-selected-names{
+  margin-top:8px;display:flex;flex-wrap:wrap;gap:4px;max-height:52px;overflow:auto;
+}
+.ov-selected-names .ov-sel-chip{font-size:10.5px}
+.ov-cat{margin-bottom:2px}
+.ov-cat-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 14px 4px;
+}
+.ov-cat-name{font-size:12px;font-weight:700;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+.ov-cat-dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.ov-cat-count{font-size:10px;color:var(--faint);font-weight:500}
+.ov-cat-all{
+  appearance:none;border:1px solid var(--line);background:var(--panel-2);
+  color:var(--accent);font-size:10px;font-weight:600;border-radius:4px;
+  padding:2px 8px;cursor:pointer;
+}
+.ov-cat-all:hover{background:var(--accent-soft)}
+.ov-fund-item{
+  display:flex;align-items:flex-start;gap:8px;padding:6px 14px 6px 22px;
+  cursor:pointer;border-radius:4px;margin:0 4px;
+}
+.ov-fund-item:hover{background:var(--hover)}
+.ov-fund-item input{accent-color:var(--accent);margin-top:3px;flex-shrink:0}
+.ov-fund-name{font-size:12px;font-weight:500;color:var(--ink);line-height:1.3}
+.ov-fund-meta{font-size:10.5px;color:var(--faint);margin-top:1px}
+.ov-fund-meta .navlive{color:var(--good);font-weight:600}
+.ov-side-foot{
+  padding:10px 12px;border-top:1px solid var(--line);display:flex;gap:6px;flex-shrink:0;
+}
+.ov-side-foot button{
+  flex:1;appearance:none;border:1px solid var(--line);background:var(--panel-2);
+  color:var(--ink-2);font-size:11px;font-weight:600;border-radius:6px;padding:7px;cursor:pointer;
+}
+.ov-side-foot button:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-line)}
+.ov-main{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+.ov-summary{
+  display:flex;flex-wrap:wrap;gap:10px;padding:12px 18px;
+  background:var(--panel);border-bottom:1px solid var(--line);flex-shrink:0;
+}
+.ov-sc{
+  background:var(--panel-2);border:1px solid var(--line);border-radius:10px;
+  padding:10px 16px;min-width:130px;flex:1 1 130px;
+}
+.ov-sc .ov-sv{font-size:24px;font-weight:700;color:var(--accent);line-height:1;font-family:"Newsreader",serif}
+.ov-sc.purple .ov-sv{color:oklch(0.72 0.16 300)}
+.ov-sc.green .ov-sv{color:var(--good)}
+.ov-sc.orange .ov-sv{color:var(--bad)}
+.ov-sc .ov-sl{font-size:11px;color:var(--faint);margin-top:4px;font-weight:500}
+.ov-tabs{
+  display:flex;gap:2px;padding:0 18px;background:var(--panel);
+  border-bottom:1px solid var(--line);flex-shrink:0;
+}
+.ov-tab{
+  appearance:none;border:none;background:none;padding:10px 14px;
+  font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;
+  border-bottom:2.5px solid transparent;
+}
+.ov-tab:hover{color:var(--accent)}
+.ov-tab[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
+.ov-content{flex:1;overflow:auto;padding:16px 18px 28px;min-height:0}
+.overlap-empty{
+  margin:24px auto;padding:36px 40px;border:1px dashed var(--line);
+  border-radius:10px;max-width:520px;background:var(--panel);text-align:center;
+}
+.ov-empty-title{font-size:22px;font-weight:500;margin-bottom:8px}
+.overlap-empty p{color:var(--ink-2);line-height:1.55;margin:0}
+.ov-panel{
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;
+}
+.ov-panel-hdr{
+  padding:12px 16px;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--line);gap:10px;flex-wrap:wrap;
+}
+.ov-panel-hdr h3{margin:0;font-size:13px;font-weight:700;color:var(--ink)}
+.ov-panel-hdr h3 span{color:var(--faint);font-weight:500;font-size:11px;margin-left:6px}
+.ov-min-ctl{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.ov-min-ctl input[type=number]{
+  width:48px;padding:3px 7px;border:1px solid var(--line);border-radius:4px;
+  background:var(--panel-2);color:var(--ink);font-size:12px;text-align:center;
+}
+.ov-sort{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ov-sort span{font-size:11px;color:var(--faint);font-weight:600}
+.ov-sort button{
+  appearance:none;border:1px solid var(--line);background:var(--panel-2);color:var(--muted);
+  border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;
+}
+.ov-sort button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+.ov-fund-count{display:inline-flex;align-items:baseline;gap:2px}
+.ov-fund-count b{color:var(--accent);font-size:14px}
+.ov-fund-count small{color:var(--faint);font-size:11px;font-weight:500}
+.ov-fl-table{width:100%;border-collapse:collapse;min-width:980px}
+.ov-fl-table th{
+  background:var(--panel-2);padding:8px 12px;text-align:left;font-size:11px;font-weight:700;
+  color:var(--faint);letter-spacing:.04em;text-transform:uppercase;border-bottom:1px solid var(--line);
+  white-space:nowrap;
+}
+.ov-fl-table td{
+  padding:9px 12px;border-bottom:1px solid var(--line-2);font-size:13px;vertical-align:middle;
+}
+.ov-fl-table tr:hover td{background:var(--hover);cursor:pointer}
+.ov-cname{font-weight:600;color:var(--ink)}
+.ov-stag{
+  display:inline-block;background:var(--accent-soft);color:var(--accent);
+  border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;
+}
+.ov-dots{display:inline-flex;gap:3px;align-items:center;margin-left:6px}
+.ov-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.ov-exp{display:flex;align-items:center;gap:8px}
+.ov-exp-bar{
+  height:5px;border-radius:3px;min-width:4px;
+  background:linear-gradient(90deg,var(--accent),oklch(0.72 0.14 300));
+}
+.ov-exp-val{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.pe-low{color:var(--good);font-weight:700}
+.pe-mid{color:var(--bad);font-weight:700}
+.pe-high{color:oklch(0.65 0.18 25);font-weight:700}
+.ov-ftags{display:flex;flex-wrap:wrap;gap:3px;max-width:260px}
+.ov-ftag{
+  background:var(--panel-2);border:1px solid var(--line);border-radius:4px;
+  padding:1px 6px;font-size:10px;color:var(--ink-2);white-space:nowrap;
+}
+.ov-note{
+  background:color-mix(in oklch, var(--gold) 14%, var(--panel));
+  border:1px solid color-mix(in oklch, var(--gold) 35%, var(--line));
+  border-radius:8px;padding:10px 14px;font-size:12px;color:var(--ink-2);margin-bottom:12px;
+}
+.ov-matrix{padding:16px;overflow:auto}
+.ov-mcell{
+  border-radius:4px;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;height:50px;
+}
+.ov-mlabel{font-size:11px;color:var(--muted);text-align:right;padding-right:6px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;font-weight:500}
+.ov-mlabel-top{font-size:10px;color:var(--muted);writing-mode:vertical-rl;transform:rotate(180deg);
+  padding-bottom:6px;max-height:110px;overflow:hidden;font-weight:500}
+.ov-vp-hero{
+  background:color-mix(in oklch, var(--good) 12%, var(--panel));
+  border:1px solid color-mix(in oklch, var(--good) 30%, var(--line));
+  border-radius:10px;padding:14px 18px;margin-bottom:12px;font-size:13px;color:var(--ink-2);
+}
+.ov-slider-row{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);margin-bottom:12px}
+.ov-slider-row input{accent-color:var(--accent);width:200px}
+.ov-sector-bars{padding:8px 4px}
+.ov-sbar-row{display:grid;grid-template-columns:140px 1fr 90px;gap:10px;align-items:center;margin:8px 0}
+.ov-sbar-track{height:10px;background:var(--panel-2);border-radius:5px;overflow:hidden}
+.ov-sbar-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--accent),oklch(0.72 0.14 300))}
+.ov-sec-cmp{overflow:auto}
+.ov-sec-cmp table{width:100%;border-collapse:collapse;min-width:640px}
+.ov-sec-cmp th,.ov-sec-cmp td{padding:8px 10px;border-bottom:1px solid var(--line-2);font-size:12px}
+.ov-sec-cmp th{background:var(--panel-2);color:var(--faint);font-size:11px;text-transform:uppercase;letter-spacing:.04em;position:sticky;top:0}
+.ov-sec-cmp th.fundcol{text-align:right;max-width:110px}
+.ov-sec-cmp td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.ov-sec-cmp td.secname{font-weight:600;white-space:nowrap}
+.ov-sec-hi{background:color-mix(in oklch, var(--accent) 18%, transparent);color:var(--accent)}
+.ov-sec-lo{color:var(--faint);font-weight:500}
+.ov-sec-delta{font-size:10px;color:var(--muted);font-weight:500;margin-left:4px}
+.ov-sec-mode{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.ov-sec-mode button{
+  appearance:none;border:1px solid var(--line);background:var(--panel-2);color:var(--muted);
+  border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;
+}
+.ov-sec-mode button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+.ov-linkout{font-size:11px;color:var(--accent);text-decoration:none;font-weight:600;margin-left:auto}
+.ov-linkout:hover{text-decoration:underline}
+.data-fetch-box{
+  margin:14px 0 18px;padding:14px 16px;border:1px solid var(--line);border-radius:10px;
+  background:var(--panel);display:flex;flex-wrap:wrap;gap:12px;align-items:center;
+}
+.data-fetch-box p{margin:0;flex:1 1 240px;font-size:12.5px;color:var(--ink-2);line-height:1.45}
+.data-fetch-box button.primary{
+  appearance:none;border:1px solid var(--accent-line);background:var(--accent-soft);
+  color:var(--accent);border-radius:6px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;
+}
+.data-fetch-box button.primary:disabled{opacity:.45;cursor:not-allowed}
+.data-fetch-prog{font-size:12px;color:var(--muted);font-family:"IBM Plex Mono",monospace;width:100%}
+@media(max-width:900px){
+  .ov-shell{flex-direction:column}
+  .ov-side{width:100%;max-height:240px;border-right:none;border-bottom:1px solid var(--line)}
+}
+
+/* data tab */
+.data-wrap{padding:22px 26px 40px;max-width:920px}
+.data-hero{margin-bottom:18px}
+.data-hero h2{font-family:"Newsreader",serif;font-weight:500;font-size:28px;margin:0 0 6px;letter-spacing:-.01em}
+.data-hero p{margin:0;color:var(--ink-2);max-width:58ch;line-height:1.5}
+.data-drop{
+  margin-top:16px;border:1px dashed var(--line);border-radius:8px;
+  background:var(--panel);padding:28px 22px;text-align:center;
+  transition:border-color 160ms, background 160ms;
+}
+.data-drop.is-drag{border-color:var(--accent-line);background:var(--accent-soft)}
+.data-drop .dd-title{font-family:"Newsreader",serif;font-size:20px;font-weight:500;margin:0 0 6px}
+.data-drop .dd-sub{color:var(--muted);font-size:12.5px;margin:0 0 14px}
+.data-drop .dd-btn{
+  appearance:none;border:1px solid var(--accent-line);background:var(--accent-soft);
+  color:var(--accent);font-weight:600;font-size:12.5px;padding:8px 14px;
+  border-radius:var(--radius);cursor:pointer;
+}
+.data-drop .dd-btn:hover{border-color:var(--accent)}
+.data-fields{display:grid;grid-template-columns:1fr auto;gap:12px;margin-top:14px;align-items:end}
+@media(max-width:640px){.data-fields{grid-template-columns:1fr}}
+.data-fields label{display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.data-fields input[type=text]{
+  background:var(--panel);border:1px solid var(--line);color:var(--ink);
+  border-radius:var(--radius);padding:8px 10px;font-size:13px;font-family:inherit;
+}
+.data-actions{display:flex;gap:8px;flex-wrap:wrap}
+.data-actions button{
+  appearance:none;border:1px solid var(--line);background:var(--panel);
+  color:var(--ink);border-radius:var(--radius);padding:8px 12px;font-size:12.5px;
+  font-weight:600;cursor:pointer;
+}
+.data-actions button.primary{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+.data-actions button:disabled{opacity:.45;cursor:not-allowed}
+.data-status{margin-top:18px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);font-size:12.5px;color:var(--ink-2)}
+.data-status b{color:var(--ink)}
+.data-msg{margin-top:12px;font-size:12.5px;line-height:1.45}
+.data-msg.err{color:var(--bad)}
+.data-msg.ok{color:var(--good)}
+.data-msg.warn{color:var(--muted)}
+.data-map{margin-top:16px}
+.data-map table{width:100%;border-collapse:collapse;font-size:12.5px}
+.data-map th,.data-map td{border-bottom:1px solid var(--line-2);padding:8px 10px;text-align:left}
+.data-map th{color:var(--faint);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.data-preview{margin-top:14px;overflow:auto;border:1px solid var(--line);border-radius:var(--radius)}
+.data-preview table{width:100%;border-collapse:collapse;font-size:12px;min-width:560px}
+.data-preview th,.data-preview td{padding:7px 10px;border-bottom:1px solid var(--line-2);text-align:left}
+.data-preview th{background:var(--panel-2);color:var(--muted);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase}
+
+/* ============================ TABLE ============================ */
+.table-scroll{overflow:auto;position:relative;max-height:calc(100vh - 250px)}
+table.rank{border-collapse:separate;border-spacing:0;width:100%;min-width:1500px}
+table.rank thead th{
+  position:sticky;top:0;z-index:30;background:var(--bg-2);
+  font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:9.5px;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+  padding:0;text-align:right;white-space:nowrap;user-select:none;
+  border-bottom:1px solid var(--line);
+}
+table.rank thead tr.grouprow th{
+  top:0;height:26px;font-size:9px;letter-spacing:.14em;color:var(--faint);
+  text-align:center;border-bottom:1px solid var(--line-2);background:var(--bg);
+  border-left:1px solid var(--line-2);
+}
+table.rank thead tr.colrow th{top:26px;height:38px}
+table.rank thead th .th-in{display:flex;align-items:center;justify-content:flex-end;gap:5px;padding:0 11px;height:100%;cursor:pointer;transition:color 140ms}
+table.rank thead th .th-in:hover{color:var(--ink)}
+table.rank thead th.sorted .th-in{color:var(--accent)}
+.sortarrow{width:8px;height:8px;opacity:0;transition:opacity 140ms,transform 200ms}
+th.sorted .sortarrow{opacity:1;color:var(--accent)}
+th.sorted.desc .sortarrow{transform:rotate(180deg)}
+
+table.rank tbody td{
+  padding:0 11px;height:46px;text-align:right;white-space:nowrap;
+  border-bottom:1px solid var(--line-2);font-size:12px;
+  position:relative;transition:background 140ms;
+}
+table.rank tbody tr{cursor:pointer;transition:background 140ms}
+table.rank tbody tr:hover td{background:var(--hover)}
+table.rank tbody tr.is-best td{background:var(--gold-soft)}
+table.rank tbody tr.is-best:hover td{background:color-mix(in oklch,var(--gold-soft) 60%,var(--hover))}
+
+/* sticky columns */
+th.sticky-l,td.sticky-l{position:sticky;left:0;z-index:20;background:var(--bg-2)}
+table.rank tbody td.sticky-l{background:var(--bg)}
+table.rank tbody tr:hover td.sticky-l{background:color-mix(in oklch,var(--bg) 92%,var(--ink))}
+table.rank tbody tr.is-best td.sticky-l{background:color-mix(in oklch,var(--gold-soft) 85%,var(--bg))}
+th.col-rank,td.col-rank{left:0;width:52px;text-align:center;padding:0}
+th.col-fund,td.col-fund{left:52px;width:var(--col-fund-w);text-align:left;box-shadow:1px 0 0 var(--line)}
+th.col-rank{z-index:31}th.col-fund{z-index:31}
+
+/* rank cell */
+.rankcell{display:flex;align-items:center;justify-content:center;height:100%;font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:13px;color:var(--ink-2);position:relative}
+tr.is-best .rankcell{color:var(--gold)}
+.rankcell .rk-delta{position:absolute;right:4px;top:7px;font-size:8px;font-weight:600;line-height:1}
+.rk-delta.up{color:var(--good)}.rk-delta.down{color:var(--bad)}
+
+/* fund cell */
+.fundcell{display:flex;align-items:center;gap:11px;height:100%}
+.fund-glyph{width:30px;height:30px;border-radius:5px;flex:none;display:flex;align-items:center;justify-content:center;font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:11px;color:var(--ink-2);background:var(--panel-2);border:1px solid var(--line)}
+tr.is-best .fund-glyph{border-color:var(--gold);color:var(--gold);background:var(--gold-soft)}
+.fund-txt{min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.fund-name{font-weight:600;font-size:12.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:178px}
+.fund-amc{font-size:10px;color:var(--muted);font-family:"IBM Plex Mono",monospace;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:178px}
+
+/* score cell */
+th.col-score,td.col-score{width:148px}
+.scorecell{display:flex;align-items:center;gap:10px;justify-content:flex-end}
+.scorebar-track{flex:1;height:6px;border-radius:3px;background:var(--line);overflow:hidden;min-width:46px}
+.scorebar-fill{height:100%;border-radius:3px;background:var(--accent);width:0;transition:width var(--transition)}
+tr.is-best .scorebar-fill{background:var(--gold)}
+.scoreval{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:13px;color:var(--ink);width:42px;text-align:right}
+.scoreval small{font-size:9px;color:var(--faint);font-weight:400}
+tr.is-best .scoreval{color:var(--gold)}
+
+.cell-val{position:relative;z-index:1}
+.cell-null{color:var(--faint)}
+td.graded{position:relative}
+td.graded .gbg{position:absolute;inset:3px 2px;border-radius:3px;z-index:0;opacity:.5}
+
+/* best ribbon */
+.best-ribbon{position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--gold)}
+
+/* ============================ DRAWER ============================ */
+.scrim{position:fixed;inset:0;background:oklch(0 0 0 / .5);backdrop-filter:blur(2px);z-index:90;opacity:0;pointer-events:none;transition:opacity var(--transition)}
+.scrim.open{opacity:1;pointer-events:auto}
+.drawer{
+  position:fixed;top:0;right:0;bottom:0;width:min(560px,94vw);z-index:100;
+  background:var(--bg);border-left:1px solid var(--line);
+  transform:translateX(100%);transition:transform var(--transition);
+  display:flex;flex-direction:column;box-shadow:-20px 0 60px oklch(0 0 0 / .3);
+}
+.drawer.open{transform:translateX(0)}
+.drawer-head{padding:22px 24px 18px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;gap:14px}
+.drawer-head .dh-main{flex:1;min-width:0}
+.drawer-rank{font-family:"Newsreader",serif;font-size:13px;color:var(--gold);font-weight:500;letter-spacing:.05em;margin-bottom:3px;display:flex;align-items:center;gap:8px}
+.drawer-rank .chip{font-family:"IBM Plex Mono",monospace;font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);padding:2px 7px;border-radius:100px}
+.drawer-title{font-family:"Newsreader",serif;font-size:26px;font-weight:500;line-height:1.15;letter-spacing:-.01em;color:var(--ink)}
+.drawer-sub{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);margin-top:5px;letter-spacing:.02em}
+.drawer-body{flex:1;overflow-y:auto;padding:22px 24px 40px}
+.drawer-close{flex:none}
+
+.dsec{margin-bottom:28px}
+.dsec-title{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin:0 0 13px;display:flex;align-items:center;gap:10px}
+.dsec-title::after{content:"";flex:1;height:1px;background:var(--line-2)}
+
+/* score-by-profile */
+.profscores{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.profscore{border:1px solid var(--line);border-radius:var(--radius);padding:12px 13px;background:var(--panel);position:relative;overflow:hidden}
+.profscore.active{border-color:var(--accent-line);background:var(--accent-soft)}
+.profscore .ps-name{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.profscore .ps-val{font-family:"Newsreader",serif;font-size:30px;font-weight:500;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+.profscore .ps-val small{font-size:12px;color:var(--faint)}
+.profscore .ps-bar{height:4px;border-radius:2px;background:var(--line);margin-top:9px;overflow:hidden}
+.profscore .ps-bar i{display:block;height:100%;background:var(--accent);border-radius:2px;transition:width var(--transition)}
+
+.radar-wrap{position:relative;height:300px}
+.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 28px}
+.statrow{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line-2);gap:12px}
+.statrow .sr-k{font-size:11.5px;color:var(--muted)}
+.statrow .sr-v{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:12.5px;color:var(--ink)}
+
+/* ============================ GLOSSARY ============================ */
+.glossary{padding:30px 26px 60px;max-width:1180px;margin:0 auto}
+.gloss-intro{font-family:"Newsreader",serif;font-size:22px;font-weight:400;color:var(--ink-2);max-width:60ch;line-height:1.4;margin:0 0 8px}
+.gloss-intro b{color:var(--ink);font-weight:600}
+.gloss-lede{color:var(--muted);font-size:12.5px;margin:0 0 34px;max-width:62ch}
+.gloss-group{margin-bottom:40px}
+.gloss-group-h{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;display:flex;align-items:center;gap:14px}
+.gloss-group-h::after{content:"";flex:1;height:1px;background:var(--line)}
+.gloss-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:1px;background:var(--line-2);border:1px solid var(--line-2);border-radius:var(--radius);overflow:hidden}
+.gloss-card{background:var(--bg);padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.gloss-card-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.gloss-card-h .gc-label{font-weight:600;font-size:14px;color:var(--ink)}
+.gloss-card-h .gc-dir{font-family:"IBM Plex Mono",monospace;font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:100px;border:1px solid var(--line);white-space:nowrap}
+.gc-dir.higher{color:var(--good);border-color:color-mix(in oklch,var(--good) 40%,transparent)}
+.gc-dir.lower{color:var(--bad);border-color:color-mix(in oklch,var(--bad) 40%,transparent)}
+.gloss-formula{font-family:"Newsreader",serif;font-style:italic;font-size:16px;color:var(--ink-2);padding:11px 14px;background:var(--panel);border-radius:var(--radius);border:1px solid var(--line-2);overflow-x:auto}
+.gloss-formula .frac{display:inline-flex;flex-direction:column;text-align:center;vertical-align:middle;margin:0 3px}
+.gloss-formula .frac .top{border-bottom:1px solid currentColor;padding:0 6px 1px}
+.gloss-formula .frac .bot{padding:1px 6px 0}
+.gloss-meaning{font-size:11.5px;color:var(--muted);line-height:1.5}
+.gloss-range{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--faint);letter-spacing:.02em}
+
+/* ============================ STATES ============================ */
+.skel{background:linear-gradient(90deg,var(--line-2) 25%,var(--line) 37%,var(--line-2) 63%);background-size:400% 100%;animation:shimmer 1.4s ease infinite;border-radius:3px}
+@keyframes shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+.skel-row{display:flex;align-items:center;gap:11px;padding:0 11px;height:46px;border-bottom:1px solid var(--line-2)}
+.errstate,.emptystate{padding:70px 26px;text-align:center;color:var(--muted);max-width:480px;margin:0 auto}
+.errstate .es-title,.emptystate .es-title{font-family:"Newsreader",serif;font-size:22px;color:var(--ink);margin-bottom:10px;font-weight:500}
+.errstate .es-sub{font-size:12.5px;line-height:1.6}
+.errstate button{margin-top:20px;appearance:none;border:1px solid var(--accent-line);background:var(--accent-soft);color:var(--accent);padding:9px 20px;border-radius:var(--radius);cursor:pointer;font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:12px}
+.errstate button:hover{background:var(--accent);color:var(--bg)}
+
+/* demo notice */
+.demo-banner{display:none;align-items:center;gap:10px;padding:8px 26px;background:color-mix(in oklch,var(--bad) 14%,var(--bg));border-bottom:1px solid color-mix(in oklch,var(--bad) 30%,var(--line));font-size:11px;color:var(--ink-2)}
+.demo-banner.show{display:flex}
+.demo-banner b{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--bad)}
+
+/* mobile cards (hidden on desktop) */
+.cards{display:none;padding:14px;flex-direction:column;gap:12px}
+.fcard{border:1px solid var(--line);border-radius:6px;background:var(--panel);padding:15px;cursor:pointer}
+.fcard.is-best{border-color:var(--gold);background:var(--gold-soft)}
+.fcard-top{display:flex;align-items:center;gap:11px;margin-bottom:12px}
+.fcard-rank{font-family:"Newsreader",serif;font-size:20px;font-weight:600;color:var(--ink-2);width:30px}
+.fcard.is-best .fcard-rank{color:var(--gold)}
+.fcard-name{font-weight:600;font-size:14px;color:var(--ink)}
+.fcard-amc{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--muted)}
+.fcard-score{margin-left:auto;text-align:right}
+.fcard-score .v{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:18px;color:var(--ink)}
+.fcard-metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 14px;font-size:11px}
+.fcard-metrics .m{display:flex;flex-direction:column}
+.fcard-metrics .m .k{font-family:"IBM Plex Mono",monospace;font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.fcard-metrics .m .v{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink-2)}
+
+@media(max-width:860px){
+  .controls{grid-template-columns:1fr;gap:20px}
+  .table-scroll{display:none}
+  .cards{display:flex}
+  .filterbar{gap:12px}
+  header.topbar{gap:14px;padding:0 16px}
+  .brand .tag{display:none}
+}
+</style>
+</head>
+<body style="font-family: system-ui">
+
+<!-- ===================== HEADER ===================== -->
+<header class="topbar">
+  <div class="brand">
+    <span class="mark">Funds<b>connect</b></span>
+    <span class="tag">Quant Research</span>
+  </div>
+  <div class="spacer"></div>
+  <div class="navbadge is-loading" id="navBadge" title="Live NAV from mfapi.in (AMFI). Published once per trading day ~9–9:30pm IST.">
+    <span class="nb-label">Live NAV</span>
+    <span class="nb-val" id="navBadgeVal">—</span>
+  </div>
+  <div class="livebadge" id="liveBadge" title="Data source &amp; freshness">
+    <span class="dot"></span>
+    <span class="lb-txt">
+      <span class="lb-src" id="lbSrc">connecting…</span>
+      <span class="lb-time" id="lbTime">—</span>
+    </span>
+  </div>
+  <button class="iconbtn" id="themeToggle" aria-label="Toggle light / dark theme" title="Toggle theme">
+    <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></svg>
+  </button>
+</header>
+
+<!-- ===================== DEMO BANNER ===================== -->
+<div class="demo-banner" id="demoBanner">
+  <b>Local mode</b>
+  <span>Computing locally in your browser from the bundled dataset using the same scoring engine (59 funds). Start the server (run.sh) to enable live Excel updates.</span>
+</div>
+
+<!-- ===================== CONTROLS ===================== -->
+<section class="controls">
+  <div class="ctl-block">
+    <span class="ctl-label">Peer Group <span class="hint">— funds rank within category</span></span>
+    <label class="cat-select">
+      <select id="categorySelect" aria-label="Fund category"></select>
+      <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    </label>
+  </div>
+
+  <div class="ctl-block">
+    <span class="ctl-label">Risk Strategy</span>
+    <div class="segment" id="profileSegment" role="group" aria-label="Risk strategy profile">
+      <span class="glider" id="segGlider"></span>
+    </div>
+  </div>
+
+  <div class="ctl-block dial-wrap">
+    <div class="dial-head">
+      <span class="ctl-label" style="margin:0">Risk Dial</span>
+      <span class="dial-tval mono" id="dialTval">t = 0.50</span>
+    </div>
+    <div class="dial-track-wrap">
+      <input type="range" class="dial" id="riskDial" min="0" max="1" step="0.01" value="0.5" aria-label="Continuous risk dial from Balanced to Aggressive" aria-valuetext="0.50" />
+    </div>
+    <div class="dial-ends"><span>Balanced</span><span id="dialName">— tilt to engage —</span><span>Aggressive</span></div>
+    <p class="dial-desc" id="dialDesc">Drag to blend the Balanced and Aggressive weightings. Tilting right rewards raw return &amp; upside capture and relaxes the penalty on volatility and drawdown.</p>
+  </div>
+</section>
+
+<style>
+.weight-editor{margin:0 0 18px;padding:16px 18px;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.we-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.we-actions{display:flex;gap:10px;align-items:center}
+.we-total{color:var(--muted);font-size:12px}
+#weReset{background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer;font-size:12px}
+#weReset:hover{border-color:var(--accent-line)}
+.we-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px 26px}
+@media(max-width:840px){.we-grid{grid-template-columns:1fr}}
+.we-row{display:grid;grid-template-columns:118px 80px 1fr 46px;align-items:center;gap:8px}
+.we-name{font-size:12.5px;color:var(--ink-2)}
+.we-dir{font-size:10px;border-radius:5px;padding:3px 6px;cursor:pointer;border:1px solid var(--line);white-space:nowrap;background:transparent}
+.we-dir.up{color:#2e9e6f;border-color:rgba(46,158,111,.5)}
+.we-dir.down{color:#d9736b;border-color:rgba(217,115,107,.5)}
+.we-slider{width:100%;accent-color:var(--accent)}
+.we-num{width:44px;background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:5px;padding:3px 4px;font-size:12px}
+</style>
+<section class="weight-editor" id="weightEditor" hidden>
+  <div class="we-head">
+    <span class="ctl-label">Custom weights <span class="hint">— set how much each measure counts</span></span>
+    <div class="we-actions"><span class="we-total mono" id="weTotal"></span>
+      <button type="button" id="weReset">Reset to Balanced</button></div>
+  </div>
+  <div class="we-grid" id="weGrid"></div>
+  <p class="dial-desc">Only the ratios matter — doubling every weight gives the same ranking. Click a green/red chip to flip whether higher or lower is better (e.g. reward high Beta).</p>
+</section>
+
+<!-- ===================== FILTER BAR ===================== -->
+<div class="filterbar">
+  <div class="group">
+    <label class="checkbox">
+      <input type="checkbox" id="minHistory" />
+      <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span>
+      Require 5-year track record
+    </label>
+  </div>
+  <div class="group">
+    <span class="meta">Top N</span>
+    <div class="topn" id="topN" role="group" aria-label="Limit number of funds shown">
+      <button data-n="0" aria-pressed="true">All</button>
+      <button data-n="5">5</button>
+      <button data-n="10">10</button>
+      <button data-n="20">20</button>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <span class="meta" id="rankMeta">—</span>
+  <div class="viewtoggle" id="viewToggle" role="group" aria-label="Switch view">
+    <button data-view="rank" aria-pressed="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>Rankings
+    </button>
+    <button data-view="overlap" aria-pressed="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="12" r="5"/><circle cx="15" cy="12" r="5"/></svg>Overlap
+    </button>
+    <button data-view="data" aria-pressed="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 19h16"/></svg>Data
+    </button>
+    <button data-view="gloss" aria-pressed="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Metrics &amp; Formulas
+    </button>
+  </div>
+</div>
+
+<!-- ===================== RANKINGS VIEW ===================== -->
+<main id="rankView">
+  <div class="table-scroll" id="tableScroll">
+    <table class="rank" id="rankTable" aria-label="Fund ranking table">
+      <thead id="rankHead"></thead>
+      <tbody id="rankBody"></tbody>
+    </table>
+  </div>
+  <div class="cards" id="cardList"></div>
+</main>
+
+<!-- ===================== OVERLAP VIEW (FundLens layout) ===================== -->
+<main id="overlapView">
+  <div class="ov-shell">
+    <aside class="ov-side">
+      <div class="ov-side-hdr">Select funds</div>
+      <div class="ov-side-search">
+        <input type="search" id="ovFundSearch" placeholder="Search all funds…" autocomplete="off" />
+      </div>
+      <div class="ov-selected-mini" id="ovSelectedMini"></div>
+      <div class="ov-side-list" id="ovFundList"></div>
+      <div class="ov-side-foot">
+        <button type="button" id="ovSelectAll">All</button>
+        <button type="button" id="ovClearFunds">Clear</button>
+      </div>
+    </aside>
+    <section class="ov-main">
+      <div class="ov-summary" id="ovSummary">
+        <div class="ov-sc ov-sc-funds">
+          <div class="ov-sv" id="ovScFunds">0</div>
+          <div class="ov-sl">Funds selected</div>
+          <div class="ov-selected-names" id="ovSelectedNames"></div>
+        </div>
+        <div class="ov-sc purple"><div class="ov-sv" id="ovScOverlap">—</div><div class="ov-sl">Overlapping companies</div></div>
+        <div class="ov-sc green"><div class="ov-sv" id="ovScAum">—</div><div class="ov-sl">Combined AUM (₹ Cr)</div></div>
+        <div class="ov-sc orange"><div class="ov-sv" id="ovScCrowded">—</div><div class="ov-sl" id="ovScCrowdedLabel">Most commonly held</div></div>
+        <div class="ov-sc"><div class="ov-sv" id="ovScValue">—</div><div class="ov-sl">Best value pick</div></div>
+        <a class="ov-linkout" href="https://vk-fundlens.netlify.app/" target="_blank" rel="noopener">Open FundLens ↗</a>
+      </div>
+      <div class="ov-tabs" role="tablist">
+        <button type="button" class="ov-tab" data-ovtab="overlap" aria-selected="true">Company Overlap</button>
+        <button type="button" class="ov-tab" data-ovtab="matrix" aria-selected="false">Fund Matrix</button>
+        <button type="button" class="ov-tab" data-ovtab="sector" aria-selected="false">Sector View</button>
+        <button type="button" class="ov-tab" data-ovtab="value" aria-selected="false">Value Picks</button>
+      </div>
+      <div class="ov-content" id="ovContent">
+        <div class="overlap-empty" id="ovEmpty" hidden>
+          <div class="ov-empty-title serif">No holdings loaded</div>
+          <p>Open the <b>Data</b> tab and upload holdings, or keep the demo <b>holdings.csv</b>. Pick 2+ funds on the left.</p>
+        </div>
+        <div id="ovTabOverlap"></div>
+        <div id="ovTabMatrix" hidden></div>
+        <div id="ovTabSector" hidden></div>
+        <div id="ovTabValue" hidden></div>
+      </div>
+    </section>
+  </div>
+  <!-- hidden inputs kept for JS that still references min-funds -->
+  <input type="hidden" id="ovMinFunds" value="2" />
+  <span id="ovMinVal" hidden>2</span>
+  <span id="ovSource" hidden></span>
+  <span id="ovStats" hidden></span>
+</main>
+
+<!-- ===================== DATA VIEW ===================== -->
+<main id="dataView" style="display:none">
+  <div class="data-wrap">
+    <div class="data-hero">
+      <h2>Holdings data</h2>
+      <p>Overlap uses this file for stock weights &amp; sectors. Prefer <b>Fetch all funds</b> below (auto, with sectors) — or upload your own AMC Excel. Rankings metrics stay separate; live NAV is mfapi.in.</p>
+    </div>
+
+    <div class="data-status" id="dataStatus">Checking current holdings…</div>
+
+    <div class="data-fetch-box">
+      <p><b>1. Auto-fetch holdings</b> — weights + sectors for every Rankings fund (FinAPI). Then <b>2. Fill P/E &amp; P/B</b> — stock valuations from Yahoo so Overlap greens / Value Picks work (FinAPI does not send those).</p>
+      <button type="button" class="primary" id="dataFetchBtn">Fetch all funds</button>
+      <button type="button" class="primary" id="dataEnrichBtn">Fill P/E &amp; P/B</button>
+      <div class="data-fetch-prog" id="dataFetchProg" hidden></div>
+    </div>
+
+    <div class="data-drop" id="dataDrop">
+      <p class="dd-title">Drop Excel, CSV, or JSON</p>
+      <p class="dd-sub">.xlsx · .xls · .csv · .json — max 25&nbsp;MB. Multi-sheet Excel: each sheet can be one fund.</p>
+      <button type="button" class="dd-btn" id="dataBrowse">Choose file</button>
+      <input type="file" id="dataFile" accept=".csv,.xlsx,.xls,.json,text/csv,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
+    </div>
+
+    <div class="data-fields">
+      <label>
+        Default fund name
+        <input type="text" id="dataDefaultFund" placeholder="Only if the file has no fund / scheme column" />
+      </label>
+      <div class="data-actions">
+        <button type="button" id="dataPreviewBtn" disabled>Preview</button>
+        <button type="button" class="primary" id="dataSaveBtn" disabled>Save &amp; use in Overlap</button>
+      </div>
+    </div>
+
+    <div class="data-msg" id="dataMsg" hidden></div>
+    <div class="data-map" id="dataMap" hidden></div>
+    <div class="data-preview" id="dataPreview" hidden></div>
+  </div>
+</main>
+
+<!-- ===================== GLOSSARY VIEW ===================== -->
+<main id="glossView" style="display:none">
+  <div class="glossary" id="glossary"></div>
+</main>
+
+<!-- ===================== DRAWER ===================== -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Fund detail" tabindex="-1">
+  <div class="drawer-head">
+    <div class="dh-main">
+      <div class="drawer-rank" id="drRank"></div>
+      <div class="drawer-title" id="drTitle"></div>
+      <div class="drawer-sub" id="drSub"></div>
+    </div>
+    <button class="iconbtn drawer-close" id="drawerClose" aria-label="Close panel">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+</aside>
+
+<script>
+"use strict";
+/* ============================================================
+   FUNDSCONNECT — single-file analyst terminal
+   All fund numbers come from the REST API (same origin).
+   A local demo dataset is used ONLY when the API is unreachable,
+   purely so the interface can be previewed; it is clearly flagged.
+   ============================================================ */
+
+const REAL = {"cols":["name","amc","category","aum","ter","cagr","r1","r2","r3","r5","r7","r10","r15","sharpe","sortino","infratio","upcap","downcap","beta","sd","var","var95_annual","var99_annual","cvar95_annual","pe","pb"],"rows":[["Baroda BNP Paribas Small Cap Fund","Baroda BNP Paribas","Small Cap",1222.0,2.19,12.28,6.3,1.82,null,null,null,null,null,0.36,0.41,-0.1,71.75,78.25,0.81,17.23,29.91,28.34,40.08,35.54,31.33,3.89],["Bandhan Small Cap Fund","Bandhan","Small Cap",27219.0,1.59,28.62,8.35,10.54,27.41,20.5,null,null,null,1.15,1.31,0.65,90.04,83.13,0.92,17.26,28.58,28.39,40.15,35.6,18.1,2.18],["Canara Robeco Small Cap Fund","Canara Robeco","Small Cap",13364.0,1.7,20.57,4.17,1.47,13.76,16.77,22.16,null,null,0.77,0.83,-0.36,75.86,84.78,0.86,17.49,28.23,28.77,40.69,36.07,30.64,3.71],["Edelweiss Small Cap Fund","Edelweiss","Small Cap",6156.0,1.83,22.95,7.59,4.37,17.32,17.77,22.74,null,null,0.89,0.96,0.26,79.42,78.78,0.85,17.32,26.89,28.49,40.29,35.72,33.11,4.44],["UTI-Small Cap Fund","UTI","Small Cap",4970.0,1.81,19.82,6.33,6.52,16.07,16.36,null,null,null,0.8,0.96,0.38,89.44,86.02,0.89,15.57,26.52,25.61,36.22,32.11,29.11,3.99],["Kotak Small Cap Fund","Kotak","Small Cap",17806.0,1.68,16.56,3.13,0.75,13.38,13.98,20.99,16.86,17.04,0.55,0.64,-0.58,77.59,93.07,0.81,18.45,27.96,30.35,42.92,38.05,33.19,3.92],["HDFC Small Cap Fund","HDFC","Small Cap",38809.0,1.53,15.46,2.74,2.56,14.09,16.72,18.7,17.6,16.4,0.5,0.61,-0.24,70.19,79.01,0.83,18.5,28.64,30.43,43.04,38.16,22.2,2.82],["Franklin India Small Cap Fund","Franklin India","Small Cap",13847.0,1.7,15.01,3.75,-0.29,16.39,18.33,18.83,15.22,18.27,0.48,0.55,-0.26,82.87,90.54,0.85,18.6,28.43,30.6,43.27,38.36,28.5,3.1],["Nippon India Small Cap Fund","Nippon India","Small Cap",74604.0,1.33,20.05,8.83,3.34,18.74,20.88,24.49,21.07,21.55,0.77,0.89,0.17,86.43,87.24,0.85,16.58,26.92,27.27,38.57,34.2,30.33,3.62],["Aditya Birla SL Small Cap Fund","Aditya Birla SL","Small Cap",5453.0,1.85,12.39,12.21,5.43,17.1,14.15,16.32,13.23,14.92,0.35,0.42,0.62,96.21,88.63,0.9,18.64,29.27,30.66,43.36,38.45,30.57,3.38],["AXIS Small Cap Fund","AXIS","Small Cap",27840.0,1.58,21.06,7.03,6.06,15.68,17.35,21.17,18.48,null,0.91,1.03,0.58,83.25,76.67,0.8,14.59,21.65,24.0,33.94,30.09,31.02,3.85],["PGIM India Small Cap Fund","PGIM India","Small Cap",1567.0,2.13,11.78,11.41,7.08,15.5,null,null,null,null,0.35,0.42,0.59,79.42,71.97,0.82,15.88,26.42,26.12,36.94,32.75,47.59,5.79],["ICICI Pru Smallcap Fund","ICICI Pru","Small Cap",8949.0,1.75,12.39,5.0,1.76,13.45,15.83,19.87,16.26,15.39,0.38,0.44,-0.02,68.48,75.14,0.73,16.4,24.61,26.98,38.15,33.83,23.59,2.62],["Sundaram Small Cap Fund","Sundaram","Small Cap",3681.0,1.9,16.99,14.18,8.32,19.35,18.24,20.13,15.02,16.19,0.53,0.62,1.03,97.6,81.91,0.88,20.92,32.55,34.41,48.67,43.15,27.84,3.2],["DSP Small Cap Fund","DSP","Small Cap",18358.0,1.69,17.41,10.42,8.67,18.46,18.39,21.63,16.58,19.33,0.55,0.61,0.8,94.82,84.0,0.88,20.28,27.12,33.36,47.18,41.83,29.28,3.7],["Union Small Cap Fund","Union","Small Cap",2094.0,2.04,15.38,20.87,10.23,19.16,18.24,22.98,16.69,null,0.53,0.59,1.34,107.02,83.59,0.99,16.87,26.91,27.75,39.24,34.8,39.29,5.48],["SBI Small Cap Fund","SBI","Small Cap",37395.0,1.53,18.54,4.31,0.2,12.81,14.36,19.48,18.1,20.16,0.74,0.93,-0.27,66.29,77.66,0.73,15.25,24.73,25.08,35.48,31.45,33.87,3.97],["LIC MF Small Cap Fund","LIC MF","Small Cap",695.0,2.33,14.19,13.12,3.81,17.63,18.51,20.18,null,null,0.46,0.51,0.02,99.98,99.67,1.0,17.33,26.39,28.51,40.31,35.74,33.05,4.18],["Mahindra Manulife Small Cap Fund","Mahindra Manulife","Small Cap",4591.0,1.85,23.31,12.88,5.45,22.24,null,null,null,null,0.91,1.04,0.29,85.9,84.48,0.92,17.07,29.23,28.08,39.71,35.21,29.38,3.24],["HSBC Small Cap Fund","HSBC","Small Cap",16877.0,1.68,19.49,8.37,2.18,17.06,19.23,20.74,18.81,null,0.73,0.82,-0.13,104.78,105.7,0.99,17.13,26.86,28.18,39.85,35.33,33.15,4.22],["ITI Small Cap Fund","ITI","Small Cap",3034.0,1.92,19.83,13.85,7.72,24.33,16.5,null,null,null,0.66,0.69,1.42,105.69,85.52,0.99,20.0,32.35,32.9,46.53,41.25,37.4,4.79],["Quant Small Cap Fund","Quant","Small Cap",31774.0,1.58,11.82,12.43,2.38,20.33,20.48,29.96,19.82,16.17,0.33,0.27,0.2,81.98,81.56,0.84,18.04,14.61,29.67,41.97,37.21,29.91,2.7],["Quantum Small Cap Fund","Quantum","Small Cap",225.0,2.17,11.6,8.44,7.09,null,null,null,null,null,0.36,0.47,0.78,79.04,66.05,0.76,14.42,25.05,23.72,33.55,29.74,22.37,2.81],["TRUSTMF Small Cap Fund","TRUSTMF","Small Cap",1891.0,2.03,14.52,26.13,null,null,null,null,null,null,0.45,0.56,2.19,125.0,78.97,0.92,18.9,36.7,31.09,43.97,38.98,42.79,5.5],["Tata Small Cap Fund","Tata","Small Cap",11645.0,1.67,18.94,-4.48,-1.05,12.13,15.11,20.33,null,null,0.71,0.79,-1.5,60.63,96.57,0.9,16.65,27.35,27.39,38.73,34.34,31.71,2.81],["JM Small Cap Fund","JM","Small Cap",730.0,2.35,5.21,12.62,null,null,null,null,null,null,0.02,0.03,0.32,117.12,105.77,1.05,21.02,35.18,34.58,48.9,43.35,29.81,2.85],["Invesco India Smallcap Fund","Invesco India","Small Cap",11717.0,1.73,22.01,12.8,10.23,23.27,20.8,23.74,null,null,0.81,0.89,1.34,118.25,93.03,0.95,18.04,26.91,29.67,41.97,37.21,41.67,4.48],["Bank of India Small Cap Fund","Bank of India","Small Cap",2318.0,2.04,25.12,19.92,9.2,21.82,19.93,26.67,null,null,0.96,1.06,0.98,114.94,94.79,1.01,17.94,26.41,29.51,41.73,37.0,35.16,4.52],["Motilal Oswal Small Cap Fund","Motilal Oswal","Small Cap",6515.0,1.84,20.23,16.71,15.38,null,null,null,null,null,0.74,0.92,1.52,124.29,91.82,0.88,17.67,30.98,29.07,41.11,36.45,32.83,4.43],["DSP Large Cap Fund","DSP","Large Cap",7175.0,4.14,17.77,-2.9,3.03,13.33,10.85,11.85,11.36,10.84,0.59,0.73,1.08,108.05,87.18,0.87,19.26,29.13,31.68,44.8,39.72,19.47,2.87],["Baroda BNP Paribas Large Cap Fund","Baroda BNP Paribas","Large Cap",2550.0,2.0,15.2,0.79,1.15,13.01,11.78,13.44,12.55,13.43,0.48,0.59,0.67,111.14,98.85,0.96,18.71,27.12,30.78,43.53,38.59,24.82,3.53],["UTI-Large Cap Fund","UTI","Large Cap",11853.0,1.91,6.19,-3.77,0.23,8.89,8.47,11.53,11.31,11.27,0.07,0.07,0.12,98.33,97.53,0.91,21.33,28.8,35.09,49.62,43.99,23.11,3.23],["Mahindra Manulife Large Cap Fund","Mahindra Manulife","Large Cap",687.0,2.34,11.38,-3.99,0.04,9.95,9.19,11.8,null,null,0.32,0.38,0.31,102.52,98.64,0.95,16.39,23.32,26.96,38.13,33.81,23.54,3.18],["Franklin India Large Cap Fund","Franklin India","Large Cap",7145.0,1.8,13.13,-1.22,2.31,11.01,8.97,11.77,10.56,10.92,0.37,0.39,0.62,103.33,92.29,0.92,22.29,29.69,36.66,51.85,45.97,25.14,3.53],["ICICI Pru Large Cap Fund","ICICI Pru","Large Cap",76297.0,1.34,14.01,-0.82,3.11,13.91,13.45,14.19,13.82,13.58,0.44,0.56,0.99,103.92,91.02,0.93,17.73,25.42,29.16,41.25,36.57,22.75,3.29],["JM Large Cap Fund","JM","Large Cap",416.0,2.45,9.16,0.45,-1.98,11.85,11.52,12.37,10.87,10.46,0.2,0.24,-0.24,100.39,105.63,1.06,21.41,33.08,35.22,49.81,44.16,25.54,3.6],["Tata Large Cap Fund","Tata","Large Cap",2682.0,1.96,14.9,1.92,1.75,11.75,11.19,12.15,11.86,11.84,0.43,0.46,0.75,105.6,92.25,1.0,22.91,31.95,37.68,53.3,47.25,23.1,3.36],["Canara Robeco Large Cap Fund","Canara Robeco","Large Cap",16323.0,1.69,12.03,-2.35,2.19,11.04,10.03,13.43,13.46,12.65,0.38,0.47,1.07,107.89,94.21,0.97,14.8,22.61,24.34,34.43,30.53,24.75,3.58],["Aditya Birla SL Large Cap Fund","Aditya Birla SL","Large Cap",28640.0,1.58,17.88,-2.16,1.7,11.2,11.01,12.48,11.84,12.67,0.61,0.75,0.93,110.9,98.97,0.96,18.75,27.61,30.84,43.62,38.67,24.13,3.36],["Edelweiss Large Cap Fund","Edelweiss","Large Cap",1422.0,2.13,13.07,-0.86,1.03,10.77,10.88,12.5,12.51,12.61,0.43,0.53,0.51,106.64,98.99,0.97,15.5,23.66,25.5,36.06,31.97,21.29,3.22],["Nippon India Large Cap Fund","Nippon India","Large Cap",51660.0,1.44,12.28,0.66,2.9,14.04,15.39,14.45,14.4,14.0,0.34,0.42,1.17,109.96,89.96,0.99,19.7,29.89,32.4,45.83,40.63,25.28,3.64],["Union Largecap Fund","Union","Large Cap",436.0,2.42,9.6,null,0.04,9.77,9.43,11.35,null,null,0.22,0.26,null,96.56,96.51,1.01,16.12,22.03,26.52,37.5,33.25,26.25,3.54],["WhiteOak Capital Large Cap Fund","WhiteOak Capital","Large Cap",1171.0,2.21,11.49,0.63,3.39,13.25,null,null,null,null,0.38,0.47,1.29,115.41,90.03,0.97,12.64,19.76,20.79,29.4,26.07,23.23,3.22],["Kotak Large Cap Fund","Kotak","Large Cap",10516.0,1.76,15.72,-0.67,2.0,11.69,10.62,13.2,12.31,12.22,0.52,0.6,1.08,109.44,95.1,0.97,17.96,25.61,29.54,41.78,37.04,21.59,3.18],["Bandhan Large Cap Fund","Bandhan","Large Cap",2001.0,2.05,10.68,2.44,3.5,13.3,11.72,13.1,12.6,11.34,0.27,0.3,0.96,118.04,98.44,0.97,19.54,25.45,32.14,45.46,40.3,25.08,3.39],["Motilal Oswal Large Cap Fund","Motilal Oswal","Large Cap",3117.0,1.97,13.99,-0.6,7.61,null,null,null,null,null,0.52,0.68,2.4,127.46,79.04,0.97,13.92,20.96,22.9,32.38,28.71,20.94,2.93],["PGIM India Large Cap Fund","PGIM India","Large Cap",535.0,2.46,16.03,-1.94,1.09,7.9,7.31,9.85,10.02,10.55,0.51,0.62,0.15,105.5,103.26,0.96,19.49,28.36,32.06,45.34,40.2,24.59,3.53],["Mirae Asset Large Cap Fund","Mirae Asset","Large Cap",37692.0,1.54,14.09,0.2,3.12,10.06,9.5,11.65,12.73,13.66,0.44,0.54,1.13,111.9,96.78,0.98,18.32,26.52,30.13,42.62,37.79,23.08,3.32],["HDFC Large Cap Fund","HDFC","Large Cap",37808.0,1.53,17.14,-0.5,1.2,11.55,12.35,11.89,12.76,11.93,0.53,0.66,0.24,97.99,94.78,0.99,21.41,32.67,35.22,49.81,44.16,24.88,3.3],["LIC MF Large Cap Fund","LIC MF","Large Cap",1330.0,2.12,9.39,-4.04,0.02,8.51,8.66,11.33,10.68,10.73,0.21,0.24,0.19,111.65,107.2,1.0,24.98,33.31,41.09,58.11,51.52,23.68,3.38],["Groww Large Cap Fund","Groww","Large Cap",129.0,2.72,10.6,1.64,0.69,11.4,10.3,10.29,10.93,null,0.28,0.34,0.47,104.28,95.68,1.01,15.87,23.84,26.1,36.92,32.73,25.14,3.43],["SBI Large Cap Fund","SBI","Large Cap",53527.0,1.43,11.57,2.86,3.97,10.85,11.43,12.95,12.14,13.55,0.31,0.38,1.41,107.71,85.67,0.92,18.53,27.63,30.48,43.11,38.22,26.55,3.59],["AXIS Large Cap Fund","AXIS","Large Cap",30005.0,1.57,11.32,-1.23,0.91,9.19,7.09,10.24,11.72,12.17,0.34,0.44,0.45,101.7,94.99,0.93,14.71,23.46,24.2,34.22,30.34,25.8,3.73],["HSBC Large Cap Fund","HSBC","Large Cap",1758.0,2.1,17.71,1.48,1.84,11.46,10.25,12.06,12.03,10.91,0.59,0.73,0.46,107.02,97.55,1.04,19.27,29.45,31.7,44.83,39.75,24.2,3.3],["Bank of India Large Cap Fund","Bank of India","Large Cap",213.0,2.47,10.81,7.46,1.53,14.37,null,null,null,null,0.31,0.37,0.36,114.89,103.12,1.06,14.56,23.79,23.95,33.87,30.03,23.41,3.09],["ITI Large Cap Fund","ITI","Large Cap",361.0,2.37,10.32,-1.28,-1.21,10.38,8.7,null,null,null,0.28,0.34,-0.06,112.17,111.69,1.12,14.78,23.6,24.31,34.38,30.48,23.53,3.07],["Sundaram Large Cap Fund","Sundaram","Large Cap",3001.0,1.94,13.51,-1.63,0.79,9.04,9.36,null,null,null,0.5,0.65,-0.07,91.49,92.81,0.94,13.49,21.57,22.19,31.38,27.82,23.55,3.38],["Invesco India Largecap Fund","Invesco India","Large Cap",1749.0,2.07,12.21,3.28,4.23,14.17,12.85,13.71,12.75,12.6,0.38,0.47,1.13,130.48,101.88,1.03,15.41,23.29,25.35,35.85,31.78,30.54,4.06],["Quant Large Cap Fund","Quant","Large Cap",3281.0,1.96,12.36,8.02,1.67,15.27,null,null,null,null,0.39,0.51,0.14,111.14,105.34,1.02,15.11,25.22,24.85,35.15,31.17,38.11,3.82],["Parag Parikh Flexi Cap Fund","Parag Parikh","Flexi Cap",141447.0,1.21,17.43,-1.41,4.79,14.52,14.28,18.44,16.85,null,0.84,1.02,0.13,57.32,45.32,0.58,11.79,17.95,19.39,27.43,24.32,16.66,2.76],["NJ Flexi Cap Fund","NJ","Flexi Cap",2560.0,2.01,8.72,-3.5,-4.69,null,null,null,null,null,0.18,0.22,-1.13,71.96,106.04,0.9,14.6,23.82,24.02,33.96,30.11,26.11,4.58],["Tata Flexi Cap Fund","Tata","Flexi Cap",3630.0,1.91,11.56,-1.98,2.77,11.98,10.26,12.38,null,null,0.34,0.39,-0.12,81.77,82.16,0.85,15.38,23.62,25.3,35.78,31.72,24.12,2.98],["Edelweiss Flexi Cap Fund","Edelweiss","Flexi Cap",3374.0,1.92,12.49,2.86,2.73,15.1,13.62,14.72,14.59,null,0.39,0.45,0.4,101.08,95.72,1.01,15.98,24.1,26.29,37.17,32.96,25.26,3.49],["Sundaram Flexi Cap Fund","Sundaram","Flexi Cap",1962.0,2.03,9.75,-1.48,2.41,10.36,null,null,null,null,0.26,0.33,-0.42,82.53,88.06,0.89,12.17,19.04,20.02,28.31,25.1,22.92,3.01],["Taurus Flexi Cap Fund","Taurus","Flexi Cap",344.0,2.46,12.08,0.52,-0.85,12.63,10.48,10.36,9.74,9.62,0.31,0.37,-0.93,92.91,109.75,0.98,23.58,35.77,38.79,54.85,48.64,19.0,2.65],["SBI Flexi Cap Fund","SBI","Flexi Cap",22387.0,1.64,12.08,0.69,0.99,9.51,9.58,11.74,11.93,13.13,0.34,0.4,-0.6,78.48,88.92,0.83,18.63,28.45,30.64,43.34,38.43,20.4,2.82],["Mirae Asset Flexi Cap Fund","Mirae Asset","Flexi Cap",4080.0,1.92,15.13,3.97,4.5,13.51,null,null,null,null,0.61,0.73,0.5,97.3,89.52,0.97,13.41,21.29,22.06,31.2,27.66,25.82,3.68],["Baroda BNP Paribas Flexi Cap Fund","Baroda BNP Paribas","Flexi Cap",1221.0,2.19,12.5,3.15,2.27,13.83,null,null,null,null,0.42,0.49,-0.09,104.11,106.07,1.0,13.97,21.95,22.98,32.5,28.81,26.98,3.38],["Canara Robeco Flexi Cap Fund","Canara Robeco","Flexi Cap",13010.0,1.73,16.66,1.04,3.1,12.17,11.03,13.98,14.17,13.0,0.53,0.63,0.26,96.86,93.49,0.93,19.77,29.29,32.52,45.99,40.78,28.62,4.21],["HSBC Flexi Cap Fund","HSBC","Flexi Cap",5538.0,1.86,14.95,5.57,4.81,17.49,14.27,15.24,13.12,13.45,0.46,0.55,0.72,118.69,106.75,1.08,19.32,29.43,31.78,44.94,39.85,24.98,3.09],["Mahindra Manulife Flexi Cap Fund","Mahindra Manulife","Flexi Cap",1527.0,2.07,9.86,-0.98,1.16,11.51,null,null,null,null,0.25,0.31,-0.77,86.92,96.99,0.91,13.78,22.35,22.67,32.06,28.42,26.57,3.39],["Aditya Birla SL Flexi Cap Fund","Aditya Birla SL","Flexi Cap",26032.0,1.6,20.64,6.65,6.99,16.16,12.62,14.86,14.29,14.5,0.64,0.78,1.35,104.48,86.92,0.91,22.86,33.84,37.6,53.18,47.15,27.66,3.82],["Kotak Flexi Cap Fund","Kotak","Flexi Cap",54801.0,1.43,13.56,1.28,2.97,13.74,12.13,13.16,13.58,14.34,0.46,0.56,0.18,97.22,94.01,0.99,15.42,24.08,25.36,35.87,31.8,23.66,3.21],["Samco Flexi Cap Fund","Samco","Flexi Cap",283.0,3.31,0.05,-5.83,-10.43,-0.13,null,null,null,null,-0.33,-0.42,-1.35,83.96,153.07,1.09,16.42,27.22,27.01,38.2,33.87,22.5,4.82],["Bandhan Flexi Cap Fund","Bandhan","Flexi Cap",7257.0,1.8,15.74,1.6,3.38,13.13,11.52,12.5,11.14,13.37,0.53,0.61,0.07,88.57,86.3,0.88,17.55,25.81,28.87,40.83,36.2,22.27,3.02],["Franklin India Flexi Cap Fund","Franklin India","Flexi Cap",18797.0,1.66,17.66,-2.25,1.86,14.44,13.77,15.6,13.28,14.17,0.58,0.72,-0.52,88.32,94.43,0.91,19.78,28.88,32.54,46.01,40.8,23.39,3.25],["Nippon India Flexi Cap Fund","Nippon India","Flexi Cap",9325.0,1.74,10.86,1.54,0.41,12.94,null,null,null,null,0.31,0.37,-0.55,96.79,103.62,1.01,14.73,23.98,24.23,34.27,30.38,26.58,3.53],["JM Flexicap Fund","JM","Flexi Cap",5069.0,1.86,13.66,1.12,-2.12,16.22,16.64,17.41,16.46,14.45,0.39,0.49,-0.7,94.62,110.66,1.03,20.63,30.63,33.93,47.99,42.55,22.85,2.96],["PGIM India Flexi Cap Fund","PGIM India","Flexi Cap",5733.0,1.85,11.99,1.98,3.61,10.11,9.44,15.33,13.8,null,0.36,0.42,-0.05,91.3,91.47,0.93,15.72,23.91,25.86,36.57,32.42,30.18,4.32],["Shriram Flexi Cap Fund","Shriram","Flexi Cap",129.0,2.41,9.15,0.37,-5.87,8.5,8.44,9.29,null,null,0.2,0.23,-1.54,77.35,120.13,1.03,16.28,24.87,26.78,37.87,33.58,20.05,3.18],["HDFC Flexi Cap Fund","HDFC","Flexi Cap",101822.0,1.27,18.53,2.56,6.06,17.45,17.84,16.58,15.98,14.16,0.59,0.77,0.74,87.54,69.91,0.78,20.9,31.87,34.38,48.62,43.11,23.64,3.21],["TRUSTMF Flexi Cap Fund","TRUSTMF","Flexi Cap",1043.0,2.2,7.12,3.38,3.68,null,null,null,null,null,0.08,0.1,0.29,101.83,94.26,1.0,16.07,27.07,26.43,37.38,33.15,31.15,4.48],["Bank of India Flexi Cap Fund","Bank of India","Flexi Cap",2460.0,2.01,24.46,11.32,3.08,20.92,16.9,null,null,null,0.99,1.13,0.12,109.79,105.35,1.15,16.61,26.31,27.32,38.64,34.26,24.04,3.47],["WhiteOak Capital Flexi Cap Fund","WhiteOak Capital","Flexi Cap",8136.0,1.8,15.41,3.51,5.88,15.75,null,null,null,null,0.65,0.78,0.93,104.83,91.12,0.94,12.84,20.54,21.12,29.87,26.48,24.86,3.36],["DSP Flexi Cap Fund","DSP","Flexi Cap",11798.0,2.0,12.93,0.81,2.58,13.08,11.03,14.5,14.23,13.08,0.38,0.46,0.34,105.15,99.85,0.96,18.14,27.78,29.84,42.2,37.41,20.91,3.23],["Union Flexi Cap Fund","Union","Flexi Cap",2289.0,2.02,11.43,2.14,2.69,12.27,11.66,14.7,13.11,11.47,0.34,0.41,-0.37,93.55,98.15,0.96,15.17,23.46,24.95,35.29,31.29,30.2,3.89],["Bajaj Finserv Flexi Cap Fund","Bajaj Finserv","Flexi Cap",7195.0,1.81,15.77,6.39,5.95,null,null,null,null,null,0.66,0.77,1.12,117.41,98.25,0.9,13.22,22.75,21.75,30.75,27.27,32.6,4.35],["UTI-Flexi Cap Fund","UTI","Flexi Cap",22248.0,1.62,9.06,-3.72,1.79,7.53,6.08,11.94,11.63,12.4,0.19,0.21,-0.07,91.89,93.52,0.83,21.03,30.95,34.59,48.92,43.38,35.8,4.77],["Helios Flexi Cap Fund","Helios","Flexi Cap",7094.0,1.8,16.56,10.35,6.53,null,null,null,null,null,0.59,0.69,0.67,113.13,97.53,1.08,16.6,26.35,27.31,38.62,34.24,33.82,4.34],["Navi Flexi Cap Fund","Navi","Flexi Cap",266.0,2.47,11.88,11.06,4.47,12.06,11.63,12.7,null,null,0.34,0.39,0.56,111.05,101.75,0.95,16.86,24.93,27.73,39.22,34.77,22.26,3.47],["Quant Flexi Cap Fund","Quant","Flexi Cap",6994.0,1.82,14.4,15.09,1.87,18.69,16.75,23.43,19.62,14.5,0.45,0.58,-0.19,112.51,119.75,1.02,18.32,28.63,30.13,42.62,37.79,39.07,3.65],["Invesco India Flexi Cap Fund","Invesco India","Flexi Cap",4956.0,1.85,15.67,2.66,5.08,18.36,null,null,null,null,0.61,0.78,0.69,129.18,114.43,1.05,14.36,22.19,23.62,33.41,29.62,37.91,5.66],["LIC MF Flexi Cap Fund","LIC MF","Flexi Cap",997.0,2.23,9.32,8.67,1.8,11.93,11.15,12.83,11.18,10.85,0.23,0.25,0.08,109.27,107.85,1.0,33.3,33.43,54.78,77.47,68.68,36.07,4.51],["ICICI Pru Flexicap Fund","ICICI Pru","Flexi Cap",21189.0,1.63,14.47,7.37,5.47,15.92,null,null,null,null,0.56,0.74,0.49,108.82,97.06,0.93,13.43,22.45,22.09,31.24,27.7,32.55,4.9],["AXIS Flexi Cap Fund","AXIS","Flexi Cap",12625.0,1.71,12.34,4.25,4.28,13.1,10.16,12.73,null,null,0.39,0.46,0.57,113.77,104.29,0.96,15.3,22.66,25.17,35.59,31.56,31.88,4.5],["Motilal Oswal Flexi Cap Fund","Motilal Oswal","Flexi Cap",12937.0,1.71,15.62,-1.78,3.59,18.37,12.28,12.28,12.67,null,0.54,0.64,0.24,118.7,110.63,1.03,16.71,25.14,27.49,38.87,34.47,46.4,4.58],["360 ONE FlexiCap Fund","360 ONE","Flexi Cap",2042.0,2.06,16.06,6.61,3.43,null,null,null,null,null,0.61,0.74,0.6,112.21,99.11,1.02,14.92,24.61,24.54,34.71,30.77,29.35,4.23],["ITI Flexi Cap Fund","ITI","Flexi Cap",1314.0,2.1,21.78,9.79,5.28,18.55,null,null,null,null,0.91,1.04,0.66,122.13,108.19,1.09,15.45,24.45,25.41,35.94,31.87,28.24,4.07],["ICICI Pru MidCap Fund","ICICI Pru","Mid Cap",7789.0,1.88,17.55,10.19,7.71,23.67,17.99,19.66,16.67,17.02,0.59,0.69,-0.08,94.98,81.66,1.04,19.26,29.81,31.68,44.8,39.72,31.35,4.53],["HSBC Midcap Fund","HSBC","Mid Cap",14249.0,2.28,18.95,14.41,9.69,25.58,18.66,19.27,17.04,17.76,0.65,0.75,1.05,131.53,62.44,0.89,19.06,28.56,31.35,44.34,39.31,41.14,5.29],["Quant Mid Cap Fund","Quant","Mid Cap",8109.0,2.17,12.99,0.04,-5.6,15.34,15.9,22.09,16.92,14.7,0.47,0.5,0.2,99.91,48.03,0.74,13.83,19.94,22.75,32.17,28.53,34.8,4.08],["Taurus Mid Cap Fund","Taurus","Mid Cap",125.0,2.65,9.63,-4.58,-3.02,10.95,11.42,15.79,14.24,15.09,0.22,0.25,-0.34,92.1,128.87,0.96,23.61,36.91,38.84,54.92,48.7,22.9,3.02],["Edelweiss Mid Cap Fund","Edelweiss","Mid Cap",16849.0,1.9,13.51,4.09,6.7,22.55,18.79,22.0,18.31,19.04,0.41,0.48,-0.21,94.49,83.01,0.91,18.57,27.99,30.55,43.2,38.3,32.48,4.69],["Baroda BNP Paribas Mid Cap Fund","Baroda BNP Paribas","Mid Cap",2461.0,2.16,12.6,8.88,4.49,19.14,15.67,19.28,15.34,17.58,0.37,0.42,-0.2,88.55,59.62,0.85,19.14,29.48,31.48,44.53,39.48,32.7,4.71],["Sundaram Mid Cap Fund","Sundaram","Mid Cap",13687.0,1.89,23.15,5.71,6.54,21.19,18.19,17.92,14.72,16.2,0.83,0.98,-0.37,89.92,72.87,0.95,19.18,28.58,31.55,44.62,39.56,34.43,4.62],["AXIS Midcap Fund","AXIS","Mid Cap",32852.0,1.7,17.43,3.89,4.07,16.89,14.2,18.19,16.68,17.58,0.72,0.87,-0.28,91.26,80.49,0.86,14.52,23.03,23.88,33.78,29.95,38.54,5.67],["UTI-Mid Cap Fund","UTI","Mid Cap",12122.0,1.86,16.58,-0.16,1.08,13.55,13.06,17.4,13.7,16.33,0.55,0.64,-0.61,87.01,76.34,0.92,18.85,29.6,31.01,43.85,38.88,32.45,4.17],["Nippon India Growth Mid Cap Fund","Nippon India Growth","Mid Cap",47415.0,1.56,21.88,6.79,6.94,21.92,20.41,21.64,18.41,16.54,0.75,0.93,-0.11,99.04,103.18,0.99,20.04,31.19,32.96,46.62,41.33,28.95,4.12],["Mahindra Manulife Mid Cap Fund","Mahindra Manulife","Mid Cap",4866.0,2.09,16.53,8.12,4.7,21.71,18.19,21.31,null,null,0.59,0.66,0.32,102.83,76.96,0.98,16.91,25.0,27.82,39.34,34.88,31.39,3.59],["Bandhan Midcap Fund","Bandhan","Mid Cap",2205.0,2.12,17.2,6.31,3.82,18.84,null,null,null,null,0.69,0.81,0.57,109.84,82.48,0.91,14.94,24.89,24.57,34.75,30.81,44.93,6.36],["ITI Mid Cap Fund","ITI","Mid Cap",1395.0,2.6,16.68,6.66,2.02,21.29,15.14,null,null,null,0.62,0.71,0.27,104.7,103.83,0.95,16.27,27.48,26.76,37.85,33.56,30.97,3.96],["WhiteOak Capital Mid Cap Fund","WhiteOak Capital","Mid Cap",5732.0,2.26,21.68,10.51,10.7,23.21,null,null,null,null,0.95,1.13,0.91,112.55,53.12,0.84,14.7,23.78,24.18,34.2,30.32,31.08,4.3],["Tata Mid Cap Fund","Tata","Mid Cap",5732.0,2.02,15.19,4.72,1.96,18.06,15.83,18.24,16.05,17.04,0.48,0.5,-0.73,86.35,98.01,0.91,19.65,29.18,32.32,45.71,40.53,31.64,3.89],["PGIM India Midcap Fund","PGIM India","Mid Cap",10822.0,1.97,15.98,-0.84,1.69,11.69,12.04,20.06,15.48,null,0.58,0.66,-0.39,92.36,86.71,0.95,16.48,25.6,27.11,38.34,33.99,35.26,5.18],["LIC MF Midcap Fund","LIC MF","Mid Cap",357.0,2.44,12.46,2.02,1.47,17.98,13.8,16.41,null,null,0.38,0.43,0.85,116.45,101.66,0.97,16.97,25.93,27.91,39.48,35.0,35.76,4.89],["Union Midcap Fund","Union","Mid Cap",1771.0,2.29,29.57,7.08,5.16,18.02,15.78,null,null,null,1.27,1.52,0.05,99.69,86.5,0.95,16.12,25.74,26.52,37.5,33.25,36.78,4.94],["DSP Midcap Fund","DSP","Mid Cap",19673.0,1.68,14.88,3.87,3.43,17.82,12.29,15.88,14.23,15.48,0.49,0.58,-0.37,89.48,81.76,0.93,17.98,28.54,29.58,41.83,37.08,27.97,3.85],["SBI Midcap Fund","SBI","Mid Cap",23417.0,1.83,16.09,0.46,1.45,12.75,14.72,18.72,13.79,17.15,0.52,0.59,-0.22,91.84,89.36,0.83,19.4,29.3,31.91,45.13,40.01,40.79,4.72],["Aditya Birla SL Midcap Fund","Aditya Birla SL","Mid Cap",6398.0,2.02,20.41,5.39,4.84,18.07,15.73,16.58,13.73,14.65,0.72,0.85,0.5,110.74,91.14,0.93,19.15,28.69,31.5,44.55,39.5,33.78,4.73],["HDFC Mid Cap Fund","HDFC","Mid Cap",97350.0,1.29,17.2,5.37,6.54,20.22,19.88,21.02,17.7,18.5,0.63,0.75,-0.43,85.48,67.66,0.84,16.9,26.64,27.8,39.31,34.86,24.99,3.39],["JM Midcap Fund","JM","Mid Cap",1217.0,2.4,22.33,7.75,3.06,21.95,null,null,null,null,0.89,1.06,1.52,134.1,86.91,1.01,16.59,26.97,27.29,38.59,34.22,33.57,4.52],["Kotak Midcap Fund","Kotak","Mid Cap",64749.0,1.38,14.85,6.26,5.95,20.09,17.29,20.62,17.44,18.66,0.49,0.57,0.52,106.79,73.36,0.93,17.86,27.52,29.38,41.55,36.84,28.13,4.18],["Canara Robeco Mid Cap Fund","Canara Robeco","Mid Cap",4622.0,2.23,18.03,4.49,4.56,18.46,null,null,null,null,0.74,0.89,0.33,106.02,94.69,0.97,14.92,24.88,24.54,34.71,30.77,33.2,4.41],["Franklin India Mid Cap Fund","Franklin India","Mid Cap",12231.0,1.87,16.72,-0.92,2.8,17.85,14.76,16.48,14.26,16.69,0.53,0.65,-0.25,94.64,95.19,0.97,20.43,31.92,33.61,47.53,42.14,32.28,3.78],["Motilal Oswal Midcap Fund","Motilal Oswal","Mid Cap",36458.0,1.54,19.95,-9.01,-0.43,17.97,21.76,21.05,16.24,null,0.74,0.88,null,103.34,113.28,1.12,17.5,26.33,28.79,40.71,36.09,44.08,5.03],["Mirae Asset Midcap Fund","Mirae Asset","Mid Cap",19003.0,1.99,21.84,8.53,6.2,18.74,16.22,null,null,null,0.82,0.88,0.64,112.8,107.41,0.96,17.91,27.83,29.46,41.66,36.94,36.61,3.85],["Invesco India Midcap Fund","Invesco India","Mid Cap",12397.0,1.87,16.77,9.64,12.95,25.7,20.22,22.32,18.68,18.84,0.59,0.69,1.68,145.65,105.36,1.09,17.64,26.56,29.02,41.04,36.38,44.88,4.81]],"profiles":[{"key":"conservative","name":"Conservative","weights":{"cagr":6,"r1":3,"r2":4,"r3":8,"r5":9,"r7":7,"r10":5,"r15":3,"sharpe":14,"sortino":6,"upcap":6,"infratio":8,"downcap":12,"sd":9,"beta":7,"pe":4,"var":10},"dir_over":{}},{"key":"balanced","name":"Balanced","weights":{"cagr":6,"r1":3,"r2":4,"r3":8,"r5":9,"r7":7,"r10":5,"r15":3,"sharpe":13,"sortino":6,"upcap":10,"infratio":10,"downcap":8,"sd":5,"beta":4,"pe":3,"var":6},"dir_over":{}},{"key":"growth","name":"Growth","weights":{"cagr":8,"r1":5,"r2":5,"r3":9,"r5":8,"r7":5,"r10":3,"r15":2,"sharpe":10,"sortino":5,"upcap":13,"infratio":9,"downcap":6,"sd":2,"beta":2,"pe":2,"var":4},"dir_over":{}},{"key":"aggressive","name":"Aggressive (max return, short horizon)","weights":{"cagr":9,"r1":10,"r2":8,"r3":9,"r5":5,"r7":3,"r10":2,"r15":1,"upcap":15,"beta":12,"infratio":8,"sharpe":6,"sortino":3,"downcap":5,"var":3},"dir_over":{"beta":"max"}}],"dir":{"cagr":1,"r1":1,"r2":1,"r3":1,"r5":1,"r7":1,"r10":1,"r15":1,"sharpe":1,"sortino":1,"upcap":1,"infratio":1,"downcap":0,"sd":0,"beta":0,"pe":0,"ter":0,"var":0},"glossary":{"cagr":{"label":"CAGR (Since Inception)","group":"Return","direction":"maximise","formula":"CAGR = (Ending NAV / Beginning NAV)^(1/years) - 1","meaning":"Compounded annual growth rate over the fund's life. The smoothed yearly return that turns the starting NAV into the latest one.","range":"Higher is better; for small caps 20%+ over a full cycle is strong."},"r1":{"label":"1-Year Return","group":"Return","direction":"maximise","formula":"R_1Y = (NAV_today / NAV_1yr_ago) - 1","meaning":"Trailing one-year point-to-point return. Most sensitive to recent momentum.","range":"Context-dependent; compare within category."},"r2":{"label":"2-Year Return (annualised)","group":"Return","direction":"maximise","formula":"R_2Y = (NAV_today / NAV_2yr_ago)^(1/2) - 1","meaning":"Annualised return over two years.","range":"Compare within category."},"r3":{"label":"3-Year Return (annualised)","group":"Return","direction":"maximise","formula":"R_3Y = (NAV_today / NAV_3yr_ago)^(1/3) - 1","meaning":"Annualised three-year return; a common medium-term yardstick.","range":"Compare within category."},"r5":{"label":"5-Year Return (annualised)","group":"Return","direction":"maximise","formula":"R_5Y = (NAV_today / NAV_5yr_ago)^(1/5) - 1","meaning":"Annualised five-year return; spans most of a market cycle.","range":"Key proven-track-record screen."},"r7":{"label":"7-Year Return (annualised)","group":"Return","direction":"maximise","formula":"R_7Y = (NAV_today / NAV_7yr_ago)^(1/7) - 1","meaning":"Annualised seven-year return.","range":"Long-term consistency."},"r10":{"label":"10-Year Return (annualised)","group":"Return","direction":"maximise","formula":"R_10Y = (NAV_today / NAV_10yr_ago)^(1/10) - 1","meaning":"Annualised ten-year return; full multi-cycle evidence.","range":"Only mature funds have it."},"r15":{"label":"15-Year Return (annualised)","group":"Return","direction":"maximise","formula":"R_15Y = (NAV_today / NAV_15yr_ago)^(1/15) - 1","meaning":"Annualised fifteen-year return.","range":"Very few funds qualify."},"sharpe":{"label":"Sharpe Ratio","group":"Risk-adjusted","direction":"maximise","formula":"Sharpe = (R_p - R_f) / sigma_p","meaning":"Excess return per unit of TOTAL risk. R_p = fund return, R_f = risk-free rate, sigma_p = SD. Higher means you are paid more for the volatility you take.","range":"> 1 good, > 1.5 excellent."},"sortino":{"label":"Sortino Ratio","group":"Risk-adjusted","direction":"maximise","formula":"Sortino = (R_p - R_f) / sigma_downside","meaning":"Like Sharpe but only penalises DOWNSIDE volatility, ignoring upside swings.","range":"> 2 is strong."},"upcap":{"label":"Up-Capture Ratio","group":"Capture","direction":"maximise","formula":"UpCapture = (fund return in up-months) / (benchmark return in up-months) * 100","meaning":"How much of the market's GAINS the fund captures when the market rises.","range":"> 100 means it beats the index in up-markets."},"downcap":{"label":"Down-Capture Ratio","group":"Capture","direction":"minimise","formula":"DownCapture = (fund return in down-months) / (benchmark return in down-months) * 100","meaning":"How much of the market's LOSSES the fund suffers when the market falls.","range":"< 100 means it loses less than the index in down-markets."},"infratio":{"label":"Information Ratio","group":"Risk-adjusted","direction":"maximise","formula":"IR = (R_p - R_benchmark) / tracking_error","meaning":"Consistency of active outperformance versus the benchmark per unit of active risk.","range":"> 0.5 good, > 1 outstanding."},"sd":{"label":"Standard Deviation","group":"Risk","direction":"minimise","formula":"sigma = sqrt( sum( (R_i - mean(R))^2 ) / (n - 1) ), annualised","meaning":"Total volatility of returns. Higher SD = wider swings in both directions.","range":"Lower for the same return is better."},"beta":{"label":"Beta","group":"Risk","direction":"minimise *","formula":"Beta = Cov(R_fund, R_market) / Var(R_market)","meaning":"Sensitivity to market moves. Beta 1.2 = ~20% more volatile than the index. * In the Aggressive profile beta is REWARDED (flipped to maximise) because high beta amplifies upside.","range":"< 1 defensive, > 1 aggressive."},"pe":{"label":"Portfolio P/E","group":"Valuation","direction":"minimise","formula":"P/E = weighted average of (price / earnings) across holdings","meaning":"How expensively the portfolio's stocks are priced relative to earnings. Lower can mean more value headroom.","range":"Lower is cheaper; judge vs category."},"ter":{"label":"Total Expense Ratio","group":"Cost","direction":"minimise","formula":"TER = annual fund costs / average AUM * 100","meaning":"Yearly fee drag deducted from returns. Every 1% of TER is 1% off your return.","range":"Lower is better; direct plans are cheaper."},"var":{"label":"VaR (historical)","group":"Risk","direction":"minimise","formula":"VaR = worst realised loss at the source confidence level (from data)","meaning":"The actual historical Value-at-Risk reported in your dataset (the worst-case loss the fund has shown). Used as the PRIMARY VaR; the parametric VaR below is kept only for comparison. Stored as a positive loss, so lower is safer.","range":"Lower is safer; e.g. 14% is far calmer than 36%."},"pb":{"label":"Portfolio P/B","group":"Valuation","direction":"minimise","formula":"P/B = weighted average of (price / book value) across holdings","meaning":"How expensively the portfolio trades relative to book value. Lower can signal more value cushion.","range":"Lower is cheaper; judge vs category."},"aum":{"label":"AUM (Cr)","group":"Size","direction":"context","formula":"AUM = total market value of all assets the fund manages","meaning":"Fund size. Very large AUM can make small-cap strategies harder to deploy nimbly.","range":"Context-dependent."},"var95_annual":{"label":"VaR 95% (1yr)","group":"Risk","direction":"minimise","formula":"VaR_95 = 1.645 * sigma   (parametric, zero-mean, annual)","meaning":"With 95% confidence, the most you would expect to lose over a year in a normal bad scenario. A VaR of 28 means '~1 year in 20 could be worse than a 28% loss'.","range":"Lower is safer."},"var99_annual":{"label":"VaR 99% (1yr)","group":"Risk","direction":"minimise","formula":"VaR_99 = 2.326 * sigma   (parametric, zero-mean, annual)","meaning":"The 1-in-100 bad-year loss threshold. More conservative tail estimate than 95%.","range":"Lower is safer."},"var95_monthly":{"label":"VaR 95% (1mo)","group":"Risk","direction":"minimise","formula":"VaR_95_monthly = 1.645 * (sigma / sqrt(12))","meaning":"The 1-in-20 bad-MONTH loss. Useful for shorter holding horizons.","range":"Lower is safer."},"cvar95_annual":{"label":"CVaR 95% (Expected Shortfall)","group":"Risk","direction":"minimise","formula":"CVaR_95 = sigma * phi(1.645) / (1 - 0.95)","meaning":"The AVERAGE loss in the worst 5% of years -- i.e. how bad it gets once you are already past the VaR line. Captures tail severity that VaR alone hides.","range":"Lower is safer."},"var95_annual_madj":{"label":"VaR 95% (mean-adjusted)","group":"Risk","direction":"minimise","formula":"VaR_95_madj = 1.645 * sigma - mu   (mu = CAGR)","meaning":"VaR after crediting the fund's expected return. A negative value means the expected drift more than offsets the 95% downside.","range":"Lower is safer."}},"dialNote":"Drag to blend Balanced and Aggressive. Tilting right rewards short-horizon return and upside capture (high beta becomes an asset) and eases the penalty on volatility, drawdown and downside."};
+const App = {
+  meta: null,            // /api/health
+  profiles: null,        // /api/profiles
+  glossary: null,        // /api/glossary
+  category: null,
+  mode: { type: 'profile', profile: 'balanced', t: 0.5 },
+  filters: { minHistory: false, topN: 0 },
+  sort: { key: null, dir: -1 },   // null => keep API/engine order
+  rows: [],              // current ranked funds
+  prevRank: {},          // name -> previous index (for FLIP + rank delta)
+  view: 'rank',
+  demo: false,
+  lastTs: null,
+  pollTimer: null,
+  overlap: {
+    funds: [],          // available from /api/overlap/funds
+    selected: new Set(),
+    minFunds: 2,
+    maxPe: 25,
+    tab: 'overlap',
+    sortMode: 'common', // common | exposure | avg_weight
+    sectorMode: 'compare', // compare | combined
+    fundQuery: '',
+    companies: [],
+    allCompanies: [],   // min_funds=1 for sector/value helpers
+    pairwise: [],
+    status: null,
+    loaded: false,
+  },
+  holdingsFetchTimer: null,
+  peEnrichTimer: null,
+  dataFile: null,       // File selected in Data tab
+  dataLast: null,       // last preview/save payload
+  navs: {},             // fund name -> {nav, date, amfi}
+  navProg: null,
+  navTimer: null,
+};
+
+/* ---------- column schema (grouped) ---------- */
+const GROUPS = [
+  { label: 'Returns', cols: [
+    ['cagr','CAGR','%',1],['r1','1Y','%',1],['r3','3Y','%',1],['r5','5Y','%',1],['r7','7Y','%',1],['r10','10Y','%',1],
+  ]},
+  { label: 'Risk-adjusted', cols: [
+    ['sharpe','Sharpe','',1],['sortino','Sortino','',1],['infratio','Info Ratio','',1],['upcap','Up Capt','%',1],['downcap','Dn Capt','%',0],
+  ]},
+  { label: 'Risk', cols: [
+    ['beta','Beta','',0],['sd','Std Dev','%',0],['var','VaR','%',0],['var95_annual','VaR 95','%',0],['var99_annual','VaR 99','%',0],['cvar95_annual','CVaR 95','%',0],
+  ]},
+  { label: 'Valuation', cols: [
+    ['pe','P/E','',0],['pb','P/B','',0],['ter','TER','%',0],['aum','AUM','cr',1],
+  ]},
+];
+const ALLCOLS = GROUPS.flatMap(g => g.cols);   // [key,label,unit,higherIsBetter]
+const DIR = Object.fromEntries(ALLCOLS.map(c => [c[0], c[3]]));
+Object.keys(REAL.dir).forEach(k=>{ DIR[k]=REAL.dir[k]; });
+
+/* ---------- formatting ---------- */
+function fmt(key, v){
+  if(v === null || v === undefined || (typeof v === 'number' && isNaN(v))) return null;
+  const unit = (ALLCOLS.find(c=>c[0]===key)||[])[2] || '';
+  if(unit === 'cr'){ // AUM in crore
+    if(v >= 1000) return '₹'+(v/1000).toFixed(1)+'k cr';
+    return '₹'+Math.round(v).toLocaleString()+' cr';
+  }
+  if(unit === '%') return (v>=0?'':'')+v.toFixed(1)+'%';
+  if(['sharpe','sortino','infratio','beta'].includes(key)) return v.toFixed(2);
+  if(['pe','pb'].includes(key)) return v.toFixed(1);
+  return (Math.round(v*100)/100).toString();
+}
+
+/* ============================================================
+   THEME
+   ============================================================ */
+const ICON_MOON = '<circle cx="12" cy="12" r="0" /><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.6 6.6 0 0 0 9.8 9.8z"/>';
+const ICON_SUN  = '<circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.4M12 19.6V22M4.5 4.5l1.7 1.7M17.8 17.8l1.7 1.7M2 12h2.4M19.6 12H22M4.5 19.5l1.7-1.7M17.8 6.2l1.7-1.7"/>';
+function applyThemeIcon(){
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.getElementById('themeIcon').innerHTML = dark ? ICON_SUN : ICON_MOON;
+}
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const cur = document.documentElement.getAttribute('data-theme');
+  document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+  applyThemeIcon();
+  // recolor existing grade cells & re-draw any open chart
+  paint();
+  if(App.openFund) renderDrawerChart(App.openFund);
+});
+applyThemeIcon();
+
+/* ============================================================
+   API LAYER  (falls back to demo dataset when offline)
+   ============================================================ */
+async function api(path, opts){
+  const o = opts || {};
+  const { headers: extraHeaders, ...rest } = o;
+  const res = await fetch(path, {
+    ...rest,
+    headers:{ 'Accept':'application/json', ...(extraHeaders || {}) },
+  });
+  if(!res.ok){
+    let detail = '';
+    try{ const j = await res.json(); detail = j.detail || j.message || ''; }catch(_){}
+    throw new Error((detail || ('HTTP '+res.status)) + ' for '+path);
+  }
+  return res.json();
+}
+
+async function boot(){
+  try{
+    const [health, profiles, glossary] = await Promise.all([
+      api('/api/health'), api('/api/profiles'), api('/api/glossary')
+    ]);
+    App.meta = health; App.profiles = profiles; App.glossary = glossary;
+    App.category = '';   // '' => All categories (small + large together)
+  }catch(e){
+    console.warn('[Fundsconnect] API unreachable, entering demo mode:', e.message);
+    enableDemo();
+  }
+  buildControls();
+  renderGlossary();
+  await loadRanking(false);   // initial paint is instant; animate only on re-rank
+  startPolling();
+  if(!App.demo) startLiveNAV(true);
+}
+
+/* ---------- Live NAV (mfapi.in / AMFI) ---------- */
+async function startLiveNAV(kick){
+  const badge = document.getElementById('navBadge');
+  const val = document.getElementById('navBadgeVal');
+  if(!badge || App.demo) return;
+  try{
+    const data = await api('/api/nav/live?refresh='+(kick?'true':'false'));
+    App.navs = Object.assign(App.navs||{}, data.navs||{});
+    App.navProg = data.progress || {};
+    const p = App.navProg;
+    const total = p.total || data.funds_total || 0;
+    const done = p.done || 0;
+    const ok = p.ok || Object.keys(App.navs).length;
+    if(p.running){
+      badge.classList.add('is-loading'); badge.classList.remove('is-done');
+      val.textContent = `${done}/${total}`;
+    } else {
+      badge.classList.remove('is-loading'); badge.classList.add('is-done');
+      val.textContent = `${ok}/${total||ok}`;
+    }
+    paintLiveNavCells();
+    if(p.running){
+      clearTimeout(App.navTimer);
+      App.navTimer = setTimeout(()=>startLiveNAV(false), 450);
+    }
+  }catch(e){
+    console.warn('[nav]', e);
+    val.textContent = 'offline';
+    badge.classList.add('is-loading');
+  }
+}
+
+function paintLiveNavCells(){
+  document.querySelectorAll('[data-fund-nav]').forEach(el=>{
+    const name = el.getAttribute('data-fund-nav');
+    const info = App.navs[name];
+    if(!info || info.nav==null) return;
+    el.classList.remove('is-loading');
+    el.innerHTML = `₹${Number(info.nav).toFixed(2)}<span class="nav-date">${escapeHTML(info.date||'')}</span>`;
+  });
+}
+
+/* ---------- ranking fetch ---------- */
+async function loadRanking(animate){
+  showSkeleton();
+  let data;
+  try{
+    if(App.mode.type==='custom'){ data = customRank(); }
+    else if(App.demo){ data = demoRank(); }
+    else if(App.mode.type === 'dial'){
+      data = await api(`/api/rank/dial?t=${App.mode.t}&category=${encodeURIComponent(App.category)}${App.filters.topN?`&n=${App.filters.topN}`:''}`);
+    } else {
+      const mh = App.filters.minHistory ? '&min_history=r5' : '';
+      const n = App.filters.topN ? `&n=${App.filters.topN}` : '';
+      data = await api(`/api/rank?profile=${App.mode.profile}&category=${encodeURIComponent(App.category)}${n}${mh}`);
+    }
+  }catch(e){
+    if(!App.demo){ enableDemo(); buildControls(); renderGlossary(); data = demoRank(); }
+    else { renderError(e); return; }
+  }
+  ingestRanking(data, animate);
+}
+
+function ingestRanking(data, animate){
+  let funds = (data.funds || []).slice();
+  // client-side filters when demo (or as a safety net)
+  if(App.demo){
+    if(App.filters.minHistory) funds = funds.filter(f => f.r5 !== null && f.r5 !== undefined);
+    if(App.filters.topN) funds = funds.slice(0, App.filters.topN);
+  }
+  // record previous positions before we overwrite
+  App.rows = funds;
+  if(data.profile_name) setActiveName(data.profile_name);
+  renderTable(animate !== false);
+  document.getElementById('rankMeta').innerHTML =
+    `<b>${funds.length}</b> funds · ${App.category||'All categories'} · ${data.profile_name || profileName()}`;
+}
+
+/* ============================================================
+   CONTROLS
+   ============================================================ */
+function buildControls(){
+  // categories
+  const sel = document.getElementById('categorySelect');
+  const cats = (App.meta && App.meta.categories) || ['Small Cap','Large Cap'];
+  sel.innerHTML = `<option value="" ${App.category===''?'selected':''}>All categories</option>` +
+    cats.map(c => `<option value="${c}" ${c===App.category?'selected':''}>${c}</option>`).join('');
+  sel.onchange = () => { App.category = sel.value; loadRanking(true); };
+
+  // segmented profiles
+  const seg = document.getElementById('profileSegment');
+  const profs = (App.profiles && App.profiles.profiles) || [
+    {key:'conservative',name:'Conservative'},{key:'balanced',name:'Balanced'},
+    {key:'growth',name:'Growth'},{key:'aggressive',name:'Aggressive'}
+  ];
+  // keep glider, append buttons
+  seg.querySelectorAll('button').forEach(b=>b.remove());
+  profs.forEach((p,i) => {
+    const b = document.createElement('button');
+    b.type='button'; b.dataset.key=p.key; b.setAttribute('aria-pressed', p.key===App.mode.profile && App.mode.type==='profile' ? 'true':'false');
+    b.innerHTML = `${p.name}<span class="sub">P${i+1}</span>`;
+    b.onclick = () => selectProfile(p.key);
+    seg.appendChild(b);
+  });
+  const cbtn=document.createElement('button'); cbtn.type='button'; cbtn.dataset.key='__custom__';
+  cbtn.setAttribute('aria-pressed', App.mode.type==='custom'?'true':'false');
+  cbtn.innerHTML='Custom<span class="sub">✎</span>'; cbtn.onclick=()=>selectCustom();
+  seg.appendChild(cbtn);
+  requestAnimationFrame(()=>moveGlider());
+  setTimeout(moveGlider, 60); setTimeout(moveGlider, 250);
+
+  // dial note
+  const dial = App.profiles && App.profiles.dial;
+  if(dial && dial.note){ document.getElementById('dialDesc').textContent = dial.note; }
+}
+
+function selectProfile(key){
+  App.mode = { type:'profile', profile:key, t:App.mode.t };
+  document.getElementById('profileSegment').classList.remove('dial-active');
+  document.querySelectorAll('#profileSegment button').forEach(b => b.setAttribute('aria-pressed', b.dataset.key===key?'true':'false'));
+  moveGlider();
+  document.getElementById('dialName').textContent = '— tilt to engage —';
+  hideEditor();
+  loadRanking(true);
+}
+function moveGlider(){
+  const seg = document.getElementById('profileSegment');
+  const active = seg.querySelector('button[aria-pressed="true"]');
+  const glider = document.getElementById('segGlider');
+  if(!active){ glider.style.opacity='0'; return; }
+  glider.style.opacity = seg.classList.contains('dial-active') ? '0' : '1';
+  glider.style.width = active.offsetWidth + 'px';
+  glider.style.left = active.offsetLeft + 'px';
+}
+window.addEventListener('resize', () => { moveGlider(); });
+if(document.fonts && document.fonts.ready){ document.fonts.ready.then(()=>moveGlider()); }
+
+/* risk dial */
+const dialEl = document.getElementById('riskDial');
+function updateDialVisual(t){
+  dialEl.style.setProperty('--fill', (t*100)+'%');
+  document.getElementById('dialTval').innerHTML = `t = ${t.toFixed(2)}`;
+  dialEl.setAttribute('aria-valuetext', t.toFixed(2));
+  const name = dialName(t);
+  document.getElementById('dialName').textContent = name;
+  document.getElementById('profileSegment').classList.add('dial-active');
+  document.querySelectorAll('#profileSegment button').forEach(b=>b.setAttribute('aria-pressed','false'));
+  moveGlider();
+}
+function dialName(t){
+  if(t < 0.2) return 'Near Balanced';
+  if(t < 0.45) return 'Balanced-tilted';
+  if(t < 0.6) return 'Midpoint blend';
+  if(t < 0.85) return 'Growth-tilted';
+  return 'Near Aggressive';
+}
+let dialDebounce=null;
+dialEl.addEventListener('input', () => {
+  const t = parseFloat(dialEl.value);
+  App.mode = { type:'dial', t, profile:App.mode.profile };
+  updateDialVisual(t); hideEditor();
+  clearTimeout(dialDebounce);
+  dialDebounce = setTimeout(()=>loadRanking(true), 120);
+});
+
+
+/* ---------- custom weights (manual editor) ---------- */
+const WEIGHT_METRICS = ['cagr','r1','r2','r3','r5','r7','r10','r15','sharpe','sortino','upcap','infratio','downcap','sd','beta','var','pe'];
+function baseBalanced(){ return (REAL.profiles.find(p=>p.key==='balanced')||{weights:{}}).weights; }
+function initCustom(){
+  if(App.customWeights) return;
+  const b=baseBalanced(); App.customWeights={}; App.customDir={};
+  WEIGHT_METRICS.forEach(m=>{ App.customWeights[m]=b[m]||0; App.customDir[m]=(REAL.dir[m]!=null?REAL.dir[m]:1); });
+}
+function metricLabel(m){ return (REAL.glossary[m]&&REAL.glossary[m].label)||m; }
+function updateWeTotal(){ const t=Object.values(App.customWeights).reduce((s,x)=>s+x,0); const el=document.getElementById('weTotal'); if(el) el.textContent='total '+t+' pts'; }
+function buildWeightEditor(){
+  initCustom();
+  const grid=document.getElementById('weGrid'); if(!grid) return;
+  grid.innerHTML='';
+  WEIGHT_METRICS.forEach(m=>{
+    const up=App.customDir[m]===1;
+    const row=document.createElement('div'); row.className='we-row';
+    row.innerHTML='<span class="we-name">'+metricLabel(m)+'</span>'
+      +'<button type="button" class="we-dir '+(up?'up':'down')+'" data-m="'+m+'">'+(up?'↑ higher':'↓ lower')+'</button>'
+      +'<input type="range" min="0" max="20" step="1" value="'+App.customWeights[m]+'" data-m="'+m+'" class="we-slider">'
+      +'<input type="number" min="0" max="20" step="1" value="'+App.customWeights[m]+'" data-m="'+m+'" class="we-num">';
+    grid.appendChild(row);
+  });
+  grid.querySelectorAll('.we-slider').forEach(el=>el.oninput=e=>setWeight(e.target.dataset.m,e.target.value,'slider'));
+  grid.querySelectorAll('.we-num').forEach(el=>el.oninput=e=>setWeight(e.target.dataset.m,e.target.value,'num'));
+  grid.querySelectorAll('.we-dir').forEach(el=>el.onclick=e=>{ const m=e.currentTarget.dataset.m; App.customDir[m]=App.customDir[m]===1?0:1; buildWeightEditor(); if(App.mode.type==='custom') loadRanking(true); });
+  const rb=document.getElementById('weReset'); if(rb) rb.onclick=()=>{ App.customWeights=null; App.customDir=null; initCustom(); buildWeightEditor(); if(App.mode.type==='custom') loadRanking(true); };
+  updateWeTotal();
+}
+function setWeight(m,val,src){
+  const v=Math.max(0,Math.min(20,parseInt(val||'0',10)||0));
+  App.customWeights[m]=v;
+  document.querySelectorAll('.we-slider[data-m="'+m+'"]').forEach(el=>{ if(src!=='slider') el.value=v; });
+  document.querySelectorAll('.we-num[data-m="'+m+'"]').forEach(el=>{ if(src!=='num') el.value=v; });
+  updateWeTotal();
+  clearTimeout(App._weDeb); App._weDeb=setTimeout(()=>{ if(App.mode.type==='custom') loadRanking(true); },140);
+}
+function selectCustom(){
+  initCustom();
+  App.mode={type:'custom', profile:App.mode.profile, t:App.mode.t};
+  document.getElementById('profileSegment').classList.remove('dial-active');
+  document.querySelectorAll('#profileSegment button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.key==='__custom__'?'true':'false'));
+  document.getElementById('dialName').textContent='— tilt to engage —';
+  moveGlider();
+  const ed=document.getElementById('weightEditor'); if(ed) ed.hidden=false;
+  buildWeightEditor();
+  loadRanking(true);
+}
+function hideEditor(){ const ed=document.getElementById('weightEditor'); if(ed) ed.hidden=true; }
+function customRank(){
+  initCustom();
+  const d=DEMO(); const w=App.customWeights, dov=App.customDir;
+  let out=[];
+  if(App.category){ out=scoreFunds((d.byCat[App.category]||[]).slice(),w,dov).sort((a,b)=>b.score-a.score); }
+  else { Object.keys(d.byCat).sort().forEach(c=>{ out=out.concat(scoreFunds(d.byCat[c].slice(),w,dov).sort((a,b)=>b.score-a.score)); }); }
+  if(App.filters.minHistory) out=out.filter(f=>f.r5!=null);
+  if(App.filters.topN){ const seen={}; out=out.filter(f=>{ seen[f.category]=seen[f.category]||0; return seen[f.category]++ < App.filters.topN; }); }
+  return { profile:'custom', profile_name:'Custom weights', count:out.length, funds:out };
+}
+
+/* filters */
+document.getElementById('minHistory').addEventListener('change', e => {
+  App.filters.minHistory = e.target.checked; loadRanking(true);
+});
+document.getElementById('topN').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#topN button').forEach(x=>x.setAttribute('aria-pressed','false'));
+  b.setAttribute('aria-pressed','true');
+  App.filters.topN = parseInt(b.dataset.n,10); loadRanking(true);
+});
+
+/* view toggle */
+document.getElementById('viewToggle').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#viewToggle button').forEach(x=>x.setAttribute('aria-pressed','false'));
+  b.setAttribute('aria-pressed','true');
+  App.view = b.dataset.view;
+  document.getElementById('rankView').style.display = App.view==='rank' ? '' : 'none';
+  document.getElementById('glossView').style.display = App.view==='gloss' ? '' : 'none';
+  document.getElementById('overlapView').style.display = App.view==='overlap' ? 'block' : 'none';
+  document.getElementById('dataView').style.display = App.view==='data' ? '' : 'none';
+  // ranking controls only on Rankings
+  const showRank = App.view === 'rank';
+  document.querySelectorAll('.controls, .weight-editor').forEach(el => {
+    el.style.display = showRank ? '' : 'none';
+  });
+  const fb = document.querySelector('.filterbar');
+  if(fb){
+    fb.querySelectorAll('.group, #rankMeta').forEach(el => {
+      el.style.display = showRank ? '' : 'none';
+    });
+  }
+  if(App.view === 'overlap') loadOverlap(true);
+  if(App.view === 'data') loadDataStatus();
+  if(App.view === 'rank'){
+    document.getElementById('rankMeta').style.display = '';
+  }
+});
+
+/* ============================================================
+   DATA TAB — upload Excel / CSV / JSON
+   ============================================================ */
+async function loadDataStatus(){
+  const el = document.getElementById('dataStatus');
+  if(App.demo){
+    el.innerHTML = 'Start the server (<span class="mono">run.sh</span>) to upload holdings.';
+    return;
+  }
+  try{
+    const st = await api('/api/data/status');
+    if(!st.present || !st.rows){
+      el.innerHTML = 'No holdings loaded yet. Use <b>Fetch all funds</b> or upload a file.';
+    } else {
+      const when = (st.upload_meta && st.upload_meta.saved_at)
+        || (st.fetch_meta && st.fetch_meta.saved_at)
+        || st.updated_at || '—';
+      const orig = st.upload_meta && st.upload_meta.original_filename
+        ? ` · uploaded as <b>${escapeHtml(st.upload_meta.original_filename)}</b>` : '';
+      const fetched = st.fetch_meta && st.fetch_meta.source
+        ? ` · auto-fetch (${escapeHtml(String(st.fetch_meta.funds_ok||st.funds))} funds)` : '';
+      el.innerHTML = `Active: <b>${escapeHtml(st.source||'—')}</b> · <b>${st.rows}</b> rows · <b>${st.funds}</b> funds · updated ${escapeHtml(when)}${orig}${fetched}`;
+    }
+    updateFetchProgressUI(st.fetch || {}, st.enrich || {});
+    if(st.fetch && st.fetch.running) pollHoldingsFetch();
+    if(st.enrich && st.enrich.running) pollPeEnrich();
+  }catch(e){
+    el.textContent = 'Could not read holdings status.';
+  }
+}
+
+function updateFetchProgressUI(prog, enrich){
+  const btn = document.getElementById('dataFetchBtn');
+  const ebtn = document.getElementById('dataEnrichBtn');
+  const line = document.getElementById('dataFetchProg');
+  if(!btn || !line) return;
+  const fetchRun = !!(prog && prog.running);
+  const enrichRun = !!(enrich && enrich.running);
+  btn.disabled = fetchRun || enrichRun;
+  btn.textContent = fetchRun ? 'Fetching…' : 'Fetch all funds';
+  if(ebtn){
+    ebtn.disabled = fetchRun || enrichRun;
+    ebtn.textContent = enrichRun ? 'Filling P/E…' : 'Fill P/E & P/B';
+  }
+  const active = enrichRun ? enrich : prog;
+  if(active && (active.running || active.message || active.error)){
+    line.hidden = false;
+    const pct = active.total ? Math.round((active.done||0)/active.total*100) : 0;
+    line.textContent = active.error
+      ? ('Error: '+active.error)
+      : (active.message || `${active.done||0}/${active.total||0}`) + (active.running ? ` (${pct}%)` : '');
+  }
+}
+
+function pollHoldingsFetch(){
+  if(App.holdingsFetchTimer) return;
+  App.holdingsFetchTimer = setInterval(async () => {
+    try{
+      const st = await api('/api/data/fetch-holdings/status');
+      updateFetchProgressUI(st, App._enrichProg || {});
+      if(!st.running){
+        clearInterval(App.holdingsFetchTimer);
+        App.holdingsFetchTimer = null;
+        await loadDataStatus();
+        App.overlap.loaded = false;
+        App.overlap.selected = new Set();
+        if(App.view === 'overlap') loadOverlap(true);
+        // Fetch replaces holdings.csv and wipes P/E — refill automatically
+        startPeEnrich();
+      }
+    }catch(e){
+      clearInterval(App.holdingsFetchTimer);
+      App.holdingsFetchTimer = null;
+    }
+  }, 1200);
+}
+
+function pollPeEnrich(){
+  if(App.peEnrichTimer) return;
+  App.peEnrichTimer = setInterval(async () => {
+    try{
+      const st = await api('/api/data/enrich-pe/status');
+      App._enrichProg = st;
+      updateFetchProgressUI({}, st);
+      if(!st.running){
+        clearInterval(App.peEnrichTimer);
+        App.peEnrichTimer = null;
+        await loadDataStatus();
+        App.overlap.loaded = false;
+        if(App.view === 'overlap') loadOverlap(true);
+      }
+    }catch(e){
+      clearInterval(App.peEnrichTimer);
+      App.peEnrichTimer = null;
+    }
+  }, 1500);
+}
+
+async function startHoldingsFetch(){
+  if(App.demo) return;
+  const btn = document.getElementById('dataFetchBtn');
+  btn.disabled = true;
+  try{
+    const res = await api('/api/data/fetch-holdings', {method:'POST'});
+    updateFetchProgressUI(res, {});
+    pollHoldingsFetch();
+  }catch(e){
+    document.getElementById('dataFetchProg').hidden = false;
+    document.getElementById('dataFetchProg').textContent = 'Could not start fetch: '+e.message;
+    btn.disabled = false;
+  }
+}
+
+async function startPeEnrich(){
+  if(App.demo) return;
+  const btn = document.getElementById('dataEnrichBtn');
+  if(btn) btn.disabled = true;
+  try{
+    const res = await api('/api/data/enrich-pe', {method:'POST'});
+    App._enrichProg = res;
+    updateFetchProgressUI({}, res);
+    pollPeEnrich();
+  }catch(e){
+    document.getElementById('dataFetchProg').hidden = false;
+    document.getElementById('dataFetchProg').textContent = 'Could not start P/E fill: '+e.message;
+    if(btn) btn.disabled = false;
+  }
+}
+
+function setDataFile(file){
+  App.dataFile = file || null;
+  App.dataLast = null;
+  const has = !!App.dataFile;
+  document.getElementById('dataPreviewBtn').disabled = !has;
+  document.getElementById('dataSaveBtn').disabled = !has;
+  const msg = document.getElementById('dataMsg');
+  msg.hidden = !has;
+  if(has){
+    msg.className = 'data-msg';
+    msg.textContent = 'Selected: '+file.name+' ('+Math.round(file.size/1024)+' KB)';
+  }
+  document.getElementById('dataMap').hidden = true;
+  document.getElementById('dataPreview').hidden = true;
+}
+
+async function postDataUpload(mode){
+  if(!App.dataFile) return;
+  if(App.demo){
+    showDataMsg('err', 'Upload needs the live server — run bash run.sh');
+    return;
+  }
+  const fd = new FormData();
+  fd.append('file', App.dataFile, App.dataFile.name);
+  fd.append('mode', mode);
+  const df = document.getElementById('dataDefaultFund').value.trim();
+  if(df) fd.append('default_fund', df);
+
+  showDataMsg('', mode==='preview' ? 'Parsing…' : 'Saving…');
+  document.getElementById('dataPreviewBtn').disabled = true;
+  document.getElementById('dataSaveBtn').disabled = true;
+  try{
+    const res = await fetch('/api/data/upload', { method:'POST', body: fd });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok || data.ok === false){
+      const err = (data.errors && data.errors.join(' ')) || data.detail || ('HTTP '+res.status);
+      showDataMsg('err', err);
+      if(data.mapping) renderDataMapping(data);
+      return;
+    }
+    App.dataLast = data;
+    renderDataMapping(data);
+    renderDataSample(data.sample||[]);
+    if(data.warnings && data.warnings.length){
+      showDataMsg('warn', data.warnings.join(' '));
+    }
+    if(mode === 'preview'){
+      showDataMsg(data.warnings && data.warnings.length ? 'warn' : 'ok',
+        `Ready: ${data.rows} rows · ${data.funds} funds. Click Save to use in Overlap.`);
+    } else {
+      showDataMsg('ok', `Saved ${data.rows} rows across ${data.funds} funds → holdings.csv. Opening Overlap…`);
+      App.overlap.loaded = false;
+      App.overlap.selected = new Set();
+      await loadDataStatus();
+      // switch to Overlap
+      const btn = document.querySelector('#viewToggle button[data-view="overlap"]');
+      if(btn) btn.click();
+    }
+  }catch(e){
+    showDataMsg('err', e.message || String(e));
+  }finally{
+    const has = !!App.dataFile;
+    document.getElementById('dataPreviewBtn').disabled = !has;
+    document.getElementById('dataSaveBtn').disabled = !has;
+  }
+}
+
+function showDataMsg(kind, text){
+  const msg = document.getElementById('dataMsg');
+  msg.hidden = false;
+  msg.className = 'data-msg'+(kind?(' '+kind):'');
+  msg.textContent = text;
+}
+
+function renderDataMapping(data){
+  const box = document.getElementById('dataMap');
+  const map = data.mapping || {};
+  const entries = Object.entries(map);
+  if(!entries.length){ box.hidden = true; return; }
+  box.hidden = false;
+  box.innerHTML = `<span class="ctl-label">Column mapping</span>
+    <table><thead><tr><th>Your column</th><th>Understood as</th></tr></thead>
+    <tbody>${entries.map(([src,canon]) =>
+      `<tr><td>${escapeHtml(src)}</td><td class="mono">${escapeHtml(canon)}</td></tr>`
+    ).join('')}</tbody></table>`;
+}
+
+function renderDataSample(rows){
+  const box = document.getElementById('dataPreview');
+  if(!rows || !rows.length){ box.hidden = true; return; }
+  const cols = Object.keys(rows[0]);
+  box.hidden = false;
+  box.innerHTML = `<table><thead><tr>${cols.map(c=>`<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r => `<tr>${cols.map(c=>{
+      const v = r[c];
+      return `<td>${v==null?'—':escapeHtml(String(v))}</td>`;
+    }).join('')}</tr>`).join('')}</tbody></table>`;
+}
+
+(function wireDataTab(){
+  const drop = document.getElementById('dataDrop');
+  const input = document.getElementById('dataFile');
+  document.getElementById('dataBrowse').onclick = () => input.click();
+  input.onchange = () => setDataFile(input.files && input.files[0]);
+  ;['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => {
+    e.preventDefault(); e.stopPropagation(); drop.classList.add('is-drag');
+  }));
+  ;['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => {
+    e.preventDefault(); e.stopPropagation(); drop.classList.remove('is-drag');
+  }));
+  drop.addEventListener('drop', e => {
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if(f) setDataFile(f);
+  });
+  document.getElementById('dataPreviewBtn').onclick = () => postDataUpload('preview');
+  document.getElementById('dataSaveBtn').onclick = () => postDataUpload('replace');
+  document.getElementById('dataFetchBtn').onclick = () => startHoldingsFetch();
+  document.getElementById('dataEnrichBtn').onclick = () => startPeEnrich();
+})();
+
+/* ============================================================
+   HOLDINGS OVERLAP
+   ============================================================ */
+function fmtCr(v){
+  if(v === null || v === undefined || isNaN(v)) return '—';
+  if(v >= 1000) return '₹'+(v/1000).toFixed(1)+'k cr';
+  if(v >= 10) return '₹'+Math.round(v).toLocaleString()+' cr';
+  return '₹'+v.toFixed(1)+' cr';
+}
+function shortFund(name){
+  return String(name||'')
+    .replace(/\s+Fund$/i,'')
+    .replace(/\s+Small Cap$/i,' SC')
+    .replace(/\s+Large Cap$/i,' LC')
+    .replace(/\s+Flexi Cap$/i,' FC')
+    .replace(/\s+Mid Cap$/i,' MC');
+}
+
+const OV_CAT_ORDER = ['Large Cap','Flexi Cap','Mid Cap','Small Cap'];
+const OV_CAT_COLOR = {
+  'Large Cap':'#3b82f6','Flexi Cap':'#7c3aed','Mid Cap':'#0891b2','Small Cap':'#16a34a'
+};
+
+function peClass(pe){
+  if(pe == null || isNaN(pe)) return '';
+  if(pe < 15) return 'pe-low';
+  if(pe < 35) return 'pe-mid';
+  return 'pe-high';
+}
+function fmtInCr(v){
+  if(v == null || isNaN(v)) return '—';
+  return '₹' + Math.round(v).toLocaleString('en-IN');
+}
+function shortCompany(name, words){
+  const parts = String(name||'').split(/\s+/).filter(Boolean);
+  const n = words || 2;
+  if(parts.length <= n) return parts.join(' ');
+  return parts.slice(0, n).join(' ') + '…';
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function defaultOverlapSelection(){
+  const prefer = ['Motilal Oswal Large Cap Fund','HDFC Flexi Cap Fund'];
+  const names = App.overlap.funds.map(f => f.fund);
+  prefer.forEach(n => { if(names.includes(n)) App.overlap.selected.add(n); });
+  if(App.overlap.selected.size < 2){
+    names.slice(0, 2).forEach(n => App.overlap.selected.add(n));
+  }
+}
+
+async function loadOverlap(forceFunds){
+  if(App.demo){
+    showOverlapEmpty(true, 'Overlap needs the live server — start with run.sh.');
+    return;
+  }
+  try{
+    if(forceFunds || !App.overlap.loaded){
+      const fdata = await api('/api/overlap/funds');
+      App.overlap.status = fdata;
+      App.overlap.funds = fdata.funds || [];
+      App.overlap.loaded = true;
+      if(!App.overlap.selected.size && App.overlap.funds.length){
+        defaultOverlapSelection();
+      }
+      const names = new Set(App.overlap.funds.map(f=>f.fund));
+      [...App.overlap.selected].forEach(n => { if(!names.has(n)) App.overlap.selected.delete(n); });
+      renderOverlapFunds();
+    }
+    if(!App.overlap.funds.length){
+      showOverlapEmpty(true);
+      return;
+    }
+    if(App.overlap.selected.size < 2){
+      showOverlapEmpty(true, 'Pick 2 or more funds from the left panel to analyse holdings overlap.');
+      renderOverlapSummary();
+      return;
+    }
+    showOverlapEmpty(false);
+    const fundsQ = encodeURIComponent([...App.overlap.selected].join(','));
+    const [data, allData] = await Promise.all([
+      api(`/api/overlap?funds=${fundsQ}&min_funds=${App.overlap.minFunds}`),
+      api(`/api/overlap?funds=${fundsQ}&min_funds=1`),
+    ]);
+    App.overlap.companies = data.companies || [];
+    App.overlap.allCompanies = allData.companies || [];
+    App.overlap.pairwise = data.pairwise || [];
+    App.overlap.status = data;
+    document.getElementById('ovSource').textContent = data.source || '—';
+    const st = data.stats || {};
+    document.getElementById('rankMeta').innerHTML =
+      `<b>${st.overlapping||0}</b> overlapping companies · ${App.overlap.selected.size} funds`;
+    renderOverlapSummary();
+    renderActiveOverlapTab();
+  }catch(e){
+    console.warn('[overlap]', e);
+    showOverlapEmpty(true, 'Could not load holdings: '+e.message);
+  }
+}
+
+function showOverlapEmpty(on, msg){
+  const empty = document.getElementById('ovEmpty');
+  const panels = ['ovTabOverlap','ovTabMatrix','ovTabSector','ovTabValue'];
+  empty.hidden = !on;
+  if(on){
+    panels.forEach(id => { const el = document.getElementById(id); if(el) el.hidden = true; });
+    const p = empty.querySelector('p');
+    if(p){
+      if(!p.dataset.default) p.dataset.default = p.innerHTML;
+      if(msg) p.textContent = msg;
+      else p.innerHTML = p.dataset.default;
+    }
+  }else{
+    empty.hidden = true;
+  }
+}
+
+function sortOverlapRows(rows){
+  const mode = App.overlap.sortMode || 'common';
+  const nSel = Math.max(1, App.overlap.selected.size);
+  const list = [...(rows || [])];
+  list.sort((a, b) => {
+    if(mode === 'exposure'){
+      return (b.est_money_cr||0) - (a.est_money_cr||0)
+        || (b.fund_count||0) - (a.fund_count||0)
+        || (b.avg_weight||0) - (a.avg_weight||0);
+    }
+    if(mode === 'avg_weight'){
+      return (b.avg_weight||0) - (a.avg_weight||0)
+        || (b.fund_count||0) - (a.fund_count||0)
+        || (b.est_money_cr||0) - (a.est_money_cr||0);
+    }
+    // most commonly held: # of selected funds holding it, then % of selection, then avg wt
+    const ca = a.fund_count||0, cb = b.fund_count||0;
+    if(cb !== ca) return cb - ca;
+    const pa = ca / nSel, pb = cb / nSel;
+    if(pb !== pa) return pb - pa;
+    return (b.avg_weight||0) - (a.avg_weight||0)
+      || (b.est_money_cr||0) - (a.est_money_cr||0);
+  });
+  return list;
+}
+
+function renderOverlapSummary(){
+  const nSel = App.overlap.selected.size;
+  const rows = sortOverlapRows(App.overlap.companies || []);
+  const funds = (App.overlap.funds || []).filter(f => App.overlap.selected.has(f.fund));
+  const combinedAum = funds.reduce((s, f) => s + (f.aum != null ? +f.aum : 0), 0);
+  const crowded = rows[0]; // top of current sort = most common by default
+  const valuePick = rows.filter(c => c.pe != null && !isNaN(c.pe)).sort((a,b) => a.pe - b.pe)[0];
+
+  document.getElementById('ovScFunds').textContent = String(nSel);
+  document.getElementById('ovScOverlap').textContent = nSel >= 2 && rows.length ? String(rows.length) : '—';
+  document.getElementById('ovScAum').textContent = combinedAum > 0 ? fmtInCr(combinedAum) : '—';
+  const namesEl = document.getElementById('ovSelectedNames');
+  if(namesEl){
+    namesEl.innerHTML = funds.length
+      ? funds.map(f => `<span class="ov-sel-chip" title="${escapeHtml(f.fund)}">${escapeHtml(shortFund(f.fund))}</span>`).join('')
+      : '<span style="font-size:11px;color:var(--faint)">None — tick funds on the left</span>';
+  }
+  const mini = document.getElementById('ovSelectedMini');
+  if(mini){
+    mini.innerHTML = funds.map(f =>
+      `<span class="ov-sel-chip" title="${escapeHtml(f.fund)}">${escapeHtml(shortFund(f.fund))}</span>`
+    ).join('');
+  }
+  const crowdEl = document.getElementById('ovScCrowded');
+  if(crowded){
+    const pct = nSel ? Math.round((crowded.fund_count||0) / nSel * 100) : 0;
+    crowdEl.textContent = shortCompany(crowded.company, 2);
+    crowdEl.title = crowded.company + ` · in ${crowded.fund_count}/${nSel} selected funds (${pct}%)`;
+  }else{
+    crowdEl.textContent = '—';
+    crowdEl.title = '';
+  }
+  const crowdLabel = document.getElementById('ovScCrowdedLabel');
+  if(crowdLabel){
+    crowdLabel.textContent = (App.overlap.sortMode||'common') === 'exposure'
+      ? 'Largest ₹ exposure'
+      : (App.overlap.sortMode === 'avg_weight' ? 'Highest avg weight' : 'Most commonly held');
+  }
+  document.getElementById('ovScValue').textContent = valuePick
+    ? shortCompany(valuePick.company, 1) + ' (' + (+valuePick.pe).toFixed(1) + 'x)'
+    : '—';
+  document.getElementById('ovScValue').title = valuePick ? valuePick.company : '';
+}
+
+function renderOverlapFunds(){
+  const box = document.getElementById('ovFundList');
+  box.innerHTML = '';
+  const q = (App.overlap.fundQuery || '').trim().toLowerCase();
+  const groups = {};
+  App.overlap.funds.forEach(f => {
+    if(q){
+      const hay = (f.fund + ' ' + (f.amc||'') + ' ' + (f.category||'')).toLowerCase();
+      if(!hay.includes(q)) return;
+    }
+    const cat = f.category || 'Other';
+    (groups[cat] = groups[cat] || []).push(f);
+  });
+  const cats = [
+    ...OV_CAT_ORDER.filter(c => groups[c]),
+    ...Object.keys(groups).filter(c => !OV_CAT_ORDER.includes(c)).sort(),
+  ];
+  if(!cats.length){
+    box.innerHTML = `<div style="padding:16px;font-size:12px;color:var(--faint)">No funds match “${escapeHtml(App.overlap.fundQuery||'')}”.</div>`;
+    return;
+  }
+  cats.forEach(cat => {
+    const block = document.createElement('div');
+    block.className = 'ov-cat';
+    const color = OV_CAT_COLOR[cat] || 'var(--accent)';
+    block.innerHTML = `<div class="ov-cat-row">
+      <span class="ov-cat-name"><span class="ov-cat-dot" style="background:${color}"></span>${escapeHtml(cat)}
+        <span class="ov-cat-count">${groups[cat].length}</span></span>
+      <button type="button" class="ov-cat-all" data-cat="${escapeHtml(cat)}">All</button>
+    </div>`;
+    groups[cat].forEach(f => {
+      const row = document.createElement('label');
+      row.className = 'ov-fund-item';
+      const checked = App.overlap.selected.has(f.fund);
+      const aum = f.aum != null ? '₹' + Math.round(f.aum).toLocaleString('en-IN') + ' Cr' : 'AUM —';
+      const nav = App.navs[f.fund];
+      const navHtml = nav && nav.nav != null
+        ? `<span class="navlive">₹${(+nav.nav).toFixed(2)}</span>`
+        : '';
+      row.innerHTML = `<input type="checkbox" ${checked?'checked':''} />
+        <span class="ov-fund-info">
+          <span class="ov-fund-name">${escapeHtml(shortFund(f.fund))}</span>
+          <span class="ov-fund-meta">${aum}${navHtml ? ' · ' + navHtml : ''}</span>
+        </span>`;
+      row.querySelector('input').onchange = () => {
+        if(row.querySelector('input').checked) App.overlap.selected.add(f.fund);
+        else App.overlap.selected.delete(f.fund);
+        renderOverlapSummary();
+        loadOverlap(false);
+      };
+      block.appendChild(row);
+    });
+    block.querySelector('.ov-cat-all').onclick = (e) => {
+      e.preventDefault();
+      groups[cat].forEach(f => App.overlap.selected.add(f.fund));
+      renderOverlapFunds();
+      loadOverlap(false);
+    };
+    box.appendChild(block);
+  });
+}
+
+function setOverlapTab(tab){
+  App.overlap.tab = tab;
+  document.querySelectorAll('.ov-tab').forEach(b => {
+    b.setAttribute('aria-selected', b.dataset.ovtab === tab ? 'true' : 'false');
+  });
+  renderActiveOverlapTab();
+}
+
+function renderActiveOverlapTab(){
+  if(document.getElementById('ovEmpty') && !document.getElementById('ovEmpty').hidden) return;
+  const tab = App.overlap.tab || 'overlap';
+  const map = {
+    overlap: 'ovTabOverlap',
+    matrix: 'ovTabMatrix',
+    sector: 'ovTabSector',
+    value: 'ovTabValue',
+  };
+  Object.entries(map).forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.hidden = k !== tab;
+  });
+  if(tab === 'overlap') renderOverlapTable();
+  else if(tab === 'matrix') renderOverlapMatrix();
+  else if(tab === 'sector') renderOverlapSector();
+  else if(tab === 'value') renderOverlapValue();
+}
+
+function holdingsSourceNote(){
+  const st = App.overlap.status || {};
+  const nFunds = (App.overlap.funds || []).length;
+  const src = st.source || 'holdings.csv';
+  const nSel = App.overlap.selected.size;
+  const sel = [...App.overlap.selected].map(shortFund).join(', ');
+  return `<b>Comparing:</b> ${nSel} fund${nSel===1?'':'s'}${sel ? ' — ' + escapeHtml(sel) : ''}.
+    <b>Holdings:</b> <code>${escapeHtml(src)}</code> (${nFunds} funds) via FinAPI portfolio snapshots (not AMFI live scrape; usually lag a month).
+    Weights/% are each fund’s reported holding %. ₹NAV = mfapi.in.
+    P/E blank? <b>Data → Fill P/E &amp; P/B</b> (re-run after every Fetch).`;
+}
+
+function renderOverlapTable(){
+  const host = document.getElementById('ovTabOverlap');
+  const nSel = App.overlap.selected.size;
+  const sortMode = App.overlap.sortMode || 'common';
+  const rows = sortOverlapRows(App.overlap.companies || []);
+  const maxE = Math.max(...rows.map(c => c.est_money_cr || 0), 1);
+  const maxMin = Math.max(2, nSel || 2);
+  const sortHint = sortMode === 'common'
+    ? `Ranked by how many of your ${nSel} selected funds hold the stock (then avg weight). Select more funds to see true “most common” names.`
+    : sortMode === 'exposure'
+      ? 'Ranked by combined ₹ exposure (weight × AUM).'
+      : 'Ranked by average portfolio weight across funds that hold the stock.';
+  host.innerHTML = `
+    <div class="ov-note" id="ovDataNote">${holdingsSourceNote()}</div>
+    <div class="ov-panel">
+      <div class="ov-panel-hdr">
+        <h3>Companies held across multiple funds <span>(${rows.length} stocks)</span></h3>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          <div class="ov-sort">
+            <span>Rank by</span>
+            <button type="button" data-ovsort="common" aria-pressed="${sortMode==='common'}">Most common</button>
+            <button type="button" data-ovsort="avg_weight" aria-pressed="${sortMode==='avg_weight'}">Avg weight</button>
+            <button type="button" data-ovsort="exposure" aria-pressed="${sortMode==='exposure'}">₹ exposure</button>
+          </div>
+          <label class="ov-min-ctl">Min funds
+            <input type="number" id="ovMinFundsInput" min="2" max="${maxMin}" value="${App.overlap.minFunds}" />
+          </label>
+        </div>
+      </div>
+      <p style="margin:0;padding:0 16px 10px;font-size:11.5px;color:var(--faint)">${escapeHtml(sortHint)}</p>
+      <div style="overflow:auto">
+        <table class="ov-fl-table" aria-label="Company overlap">
+          <thead><tr>
+            <th>#</th><th>Company</th><th>Sector</th><th>In funds</th>
+            <th>Est. ₹ exposure (Cr)</th><th>Avg wt%</th><th>P/E</th><th>P/B</th><th>Fund breakdown</th>
+          </tr></thead>
+          <tbody>
+          ${rows.length ? rows.map((c,i) => {
+            const tags = (c.funds||[]).map(f =>
+              `<span class="ov-ftag" title="${escapeHtml(f.fund)}">${escapeHtml(shortFund(f.fund))} (${f.weight!=null?f.weight.toFixed(2):'—'}%)</span>`
+            ).join('');
+            const dots = Array.from({length: Math.min(c.fund_count||0, 12)}, () => '<span class="ov-dot"></span>').join('');
+            const barW = Math.max(8, Math.round(((c.est_money_cr||0)/maxE)*160));
+            const pe = c.pe != null && !isNaN(c.pe)
+              ? `<span class="${peClass(c.pe)}">${(+c.pe).toFixed(1)}</span>` : '—';
+            const pb = c.pb != null && !isNaN(c.pb) ? (+c.pb).toFixed(1) : '—';
+            const heldPct = nSel ? Math.round((c.fund_count||0) / nSel * 100) : 0;
+            return `<tr data-key="${escapeHtml(c.company_key)}" data-name="${escapeHtml(c.company)}">
+              <td style="color:var(--faint);font-weight:700">${i+1}</td>
+              <td><span class="ov-cname">${escapeHtml(c.company)}</span></td>
+              <td>${c.sector?`<span class="ov-stag">${escapeHtml(c.sector)}</span>`:'—'}</td>
+              <td style="white-space:nowrap" title="Held in ${c.fund_count} of ${nSel} selected funds (${heldPct}%)">
+                <span class="ov-fund-count"><b>${c.fund_count}</b><small>/${nSel}</small></span>
+                <span class="ov-dots">${dots}</span>
+              </td>
+              <td><div class="ov-exp"><span class="ov-exp-val">${c.est_money_cr!=null?fmtInCr(c.est_money_cr):'—'}</span>
+                <span class="ov-exp-bar" style="width:${barW}px"></span></div></td>
+              <td>${c.avg_weight!=null?c.avg_weight.toFixed(1)+'%':'—'}</td>
+              <td>${pe}</td>
+              <td style="color:var(--muted)">${pb}</td>
+              <td><div class="ov-ftags">${tags}</div></td>
+            </tr>`;
+          }).join('') : `<tr><td colspan="9" style="text-align:center;padding:36px;color:var(--faint)">No companies in ${App.overlap.minFunds}+ funds. Lower the filter.</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  const inp = document.getElementById('ovMinFundsInput');
+  if(inp){
+    inp.onchange = () => {
+      App.overlap.minFunds = Math.max(2, Math.min(maxMin, parseInt(inp.value,10)||2));
+      document.getElementById('ovMinFunds').value = String(App.overlap.minFunds);
+      loadOverlap(false);
+    };
+  }
+  host.querySelectorAll('[data-ovsort]').forEach(btn => {
+    btn.onclick = () => {
+      App.overlap.sortMode = btn.dataset.ovsort;
+      renderOverlapSummary();
+      renderOverlapTable();
+    };
+  });
+  host.querySelectorAll('tr[data-key]').forEach(tr => {
+    tr.onclick = () => openOverlapDrawer(tr.dataset.key, tr.dataset.name);
+  });
+}
+
+function renderOverlapMatrix(){
+  const host = document.getElementById('ovTabMatrix');
+  const selected = [...App.overlap.selected];
+  const pairs = App.overlap.pairwise || [];
+  const lookup = {};
+  pairs.forEach(p => {
+    lookup[p.fund_a+'|'+p.fund_b] = p;
+    lookup[p.fund_b+'|'+p.fund_a] = p;
+  });
+  const n = selected.length;
+  if(n < 2){
+    host.innerHTML = `<div class="ov-panel" style="padding:36px;text-align:center;color:var(--faint)">Select 2+ funds for the matrix.</div>`;
+    return;
+  }
+  let grid = `<div class="ov-panel ov-matrix"><div style="margin-bottom:12px">
+    <h3 style="margin:0 0 4px;font-size:14px">Pairwise fund overlap</h3>
+    <p style="margin:0;font-size:12px;color:var(--faint)">% of holdings shared (min-weight overlap)</p>
+  </div><div style="display:grid;grid-template-columns:130px repeat(${n},68px);gap:3px;align-items:center">`;
+  grid += '<div></div>';
+  selected.forEach(f => {
+    grid += `<div class="ov-mlabel-top" title="${escapeHtml(f)}">${escapeHtml(shortFund(f))}</div>`;
+  });
+  selected.forEach((rowF, i) => {
+    grid += `<div class="ov-mlabel" title="${escapeHtml(rowF)}">${escapeHtml(shortFund(rowF))}</div>`;
+    selected.forEach((colF, j) => {
+      if(i === j){
+        grid += `<div class="ov-mcell" style="background:var(--accent);color:#fff">—</div>`;
+        return;
+      }
+      const p = lookup[rowF+'|'+colF];
+      const v = p ? p.overlap_pct : 0;
+      let bg, col;
+      if(v >= 50){ bg = `color-mix(in oklch, var(--accent) ${35+v/3}%, transparent)`; col = 'var(--ink)'; }
+      else if(v >= 30){ bg = `color-mix(in oklch, oklch(0.72 0.16 300) ${25+v/4}%, transparent)`; col = 'var(--ink-2)'; }
+      else { bg = `color-mix(in oklch, var(--muted) ${10+v/5}%, transparent)`; col = 'var(--muted)'; }
+      grid += `<div class="ov-mcell" style="background:${bg};color:${col}" title="${escapeHtml(shortFund(rowF))} ↔ ${escapeHtml(shortFund(colF))}: ${v.toFixed(1)}%">${v.toFixed(0)}%</div>`;
+    });
+  });
+  grid += '</div></div>';
+  host.innerHTML = grid;
+}
+
+function buildSectorByFund(){
+  // sector -> fund -> sum weight %
+  const rows = App.overlap.allCompanies || App.overlap.companies || [];
+  const selected = [...App.overlap.selected];
+  const matrix = {}; // sector -> {fund: weight}
+  const exp = {};    // sector -> est money
+  rows.forEach(c => {
+    const s = c.sector || 'Other';
+    if(!matrix[s]) matrix[s] = {};
+    exp[s] = (exp[s] || 0) + (c.est_money_cr || 0);
+    (c.funds || []).forEach(f => {
+      if(!App.overlap.selected.has(f.fund)) return;
+      if(f.weight == null) return;
+      matrix[s][f.fund] = (matrix[s][f.fund] || 0) + (+f.weight);
+    });
+  });
+  const sectors = Object.keys(matrix).sort((a,b) => {
+    const sa = selected.reduce((t,f)=>t+(matrix[a][f]||0),0);
+    const sb = selected.reduce((t,f)=>t+(matrix[b][f]||0),0);
+    return sb - sa;
+  });
+  return {matrix, exp, sectors, selected};
+}
+
+function renderOverlapSector(){
+  const host = document.getElementById('ovTabSector');
+  const mode = App.overlap.sectorMode || 'compare';
+  const {matrix, exp, sectors, selected} = buildSectorByFund();
+  if(selected.length < 1){
+    host.innerHTML = `<div class="ov-panel" style="padding:36px;text-align:center;color:var(--faint)">Select funds to compare sectors.</div>`;
+    return;
+  }
+
+  let body = '';
+  if(mode === 'compare'){
+    const head = selected.map(f =>
+      `<th class="fundcol" title="${escapeHtml(f)}">${escapeHtml(shortFund(f))}</th>`
+    ).join('') + (selected.length >= 2 ? '<th class="fundcol">Spread</th>' : '');
+    const trs = sectors.map(sec => {
+      const vals = selected.map(f => matrix[sec][f] || 0);
+      const max = Math.max(...vals, 0);
+      const min = Math.min(...vals.filter(v=>v>0), max);
+      const cells = selected.map((f,i) => {
+        const v = vals[i];
+        const cls = v <= 0 ? 'ov-sec-lo' : (v === max && max > 0 ? 'ov-sec-hi' : '');
+        return `<td class="num ${cls}">${v>0?v.toFixed(1)+'%':'—'}</td>`;
+      }).join('');
+      const spread = selected.length >= 2
+        ? `<td class="num" style="color:var(--muted)">${(max-min).toFixed(1)} pp</td>` : '';
+      return `<tr><td class="secname">${escapeHtml(sec)}</td>${cells}${spread}</tr>`;
+    }).join('');
+    body = `<div class="ov-sec-cmp"><table>
+      <thead><tr><th>Sector</th>${head}</tr></thead>
+      <tbody>${trs || '<tr><td colspan="99" style="text-align:center;padding:28px;color:var(--faint)">No sector tags on holdings yet. Run <b>Fetch all funds</b> in the Data tab.</td></tr>'}</tbody>
+    </table></div>
+    <p style="margin:12px 0 0;font-size:11.5px;color:var(--faint)">Each cell = that fund’s portfolio weight in the sector. Highlight = highest among selected. Spread = max − min (percentage points).</p>`;
+  } else {
+    const maxE = Math.max(...sectors.map(s => exp[s] || 0), 1);
+    body = `<div class="ov-sector-bars">
+      ${sectors.map(l => {
+        const pct = Math.round(((exp[l]||0) / maxE) * 100);
+        return `<div class="ov-sbar-row">
+          <div style="font-size:12px;font-weight:600">${escapeHtml(l)}</div>
+          <div class="ov-sbar-track"><div class="ov-sbar-fill" style="width:${pct}%"></div></div>
+          <div style="font-size:12px;font-weight:700;text-align:right">${fmtInCr(exp[l])}</div>
+        </div>`;
+      }).join('') || '<div style="color:var(--faint);padding:24px;text-align:center">No sector data</div>'}
+    </div>`;
+  }
+
+  host.innerHTML = `<div class="ov-panel" style="padding:16px 18px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+      <div>
+        <h3 style="margin:0 0 4px;font-size:14px">Sector allocation</h3>
+        <p style="margin:0;font-size:12px;color:var(--faint)">${mode==='compare'
+          ? 'Compare how much each selected fund puts in each sector'
+          : 'Combined est. ₹ exposure across selected funds'}</p>
+      </div>
+      <div class="ov-sec-mode">
+        <button type="button" data-secmode="compare" aria-pressed="${mode==='compare'}">Compare funds</button>
+        <button type="button" data-secmode="combined" aria-pressed="${mode==='combined'}">Combined ₹</button>
+      </div>
+    </div>
+    ${body}
+  </div>`;
+  host.querySelectorAll('[data-secmode]').forEach(btn => {
+    btn.onclick = () => {
+      App.overlap.sectorMode = btn.dataset.secmode;
+      renderOverlapSector();
+    };
+  });
+}
+
+function renderOverlapValue(){
+  const host = document.getElementById('ovTabValue');
+  const maxPE = App.overlap.maxPe;
+  const picks = (App.overlap.companies || [])
+    .filter(c => c.pe != null && c.pe <= maxPE)
+    .sort((a,b) => a.pe - b.pe);
+  host.innerHTML = `
+    <div class="ov-vp-hero"><b>Value picks:</b> stocks in 2+ selected funds with P/E ≤ <b>${maxPE}x</b> — crowded names still trading cheaper.</div>
+    <div class="ov-slider-row">P/E threshold: <strong>${maxPE}x</strong>
+      <input type="range" id="ovPeSlider" min="5" max="100" value="${maxPE}" />
+    </div>
+    <div class="ov-panel"><div style="overflow:auto">
+      <table class="ov-fl-table">
+        <thead><tr><th>#</th><th>Company</th><th>Sector</th><th>Funds</th><th>P/E</th><th>P/B</th><th>Est. ₹ exposure</th><th>Avg wt%</th></tr></thead>
+        <tbody>
+        ${picks.length ? picks.map((c,i) => {
+          const tags = (c.funds||[]).map(f =>
+            `<span class="ov-ftag">${escapeHtml(shortFund(f.fund))} (${f.weight!=null?f.weight.toFixed(1):'—'}%)</span>`
+          ).join('');
+          return `<tr>
+            <td style="color:var(--faint)">${i+1}</td>
+            <td><span class="ov-cname">${escapeHtml(c.company)}</span></td>
+            <td>${c.sector?`<span class="ov-stag">${escapeHtml(c.sector)}</span>`:'—'}</td>
+            <td><div class="ov-ftags">${tags}</div></td>
+            <td><span class="${peClass(c.pe)}" style="font-size:14px">${(+c.pe).toFixed(1)}x</span></td>
+            <td>${c.pb!=null?(+c.pb).toFixed(1)+'x':'—'}</td>
+            <td style="font-weight:700">${c.est_money_cr!=null?fmtInCr(c.est_money_cr)+' Cr':'—'}</td>
+            <td>${c.avg_weight!=null?c.avg_weight.toFixed(1)+'%':'—'}</td>
+          </tr>`;
+        }).join('') : `<tr><td colspan="8" style="text-align:center;padding:36px;color:var(--faint)">No value picks at P/E ≤ ${maxPE}. Raise the threshold.</td></tr>`}
+        </tbody>
+      </table>
+    </div></div>`;
+  const sl = document.getElementById('ovPeSlider');
+  if(sl){
+    sl.oninput = () => {
+      App.overlap.maxPe = +sl.value;
+      renderOverlapValue();
+    };
+  }
+}
+
+async function openOverlapDrawer(key, name){
+  try{
+    const data = await api('/api/overlap/company/'+encodeURIComponent(name||key));
+    const c = data.company;
+    document.getElementById('drRank').textContent = c.fund_count + ' funds';
+    document.getElementById('drTitle').textContent = c.company;
+    document.getElementById('drSub').textContent =
+      (c.sector? c.sector+' · ' : '') +
+      (c.est_money_cr!=null ? 'Est. '+fmtCr(c.est_money_cr) : 'AUM unmatched') +
+      ' · avg '+ (c.avg_weight!=null?c.avg_weight.toFixed(1)+'%':'—') +
+      (c.pe!=null ? ' · P/E '+(+c.pe).toFixed(1) : '');
+    const rows = (c.funds||[]).map(f => `
+      <div style="display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:10px 0;border-bottom:1px solid var(--line-2)">
+        <div>
+          <div style="font-weight:600">${escapeHtml(f.fund)}</div>
+          <div style="font-size:11px;color:var(--faint)">${escapeHtml(f.amc||'')}${f.category?' · '+escapeHtml(f.category):''}</div>
+        </div>
+        <div class="num" style="text-align:right">${f.weight!=null?f.weight.toFixed(2)+'%':'—'}</div>
+        <div class="num" style="text-align:right;color:var(--muted)">${fmtCr(f.est_money_cr)}</div>
+      </div>`).join('');
+    document.getElementById('drawerBody').innerHTML =
+      `<div style="display:grid;grid-template-columns:1fr auto auto;gap:10px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);padding-bottom:6px">
+        <span>Fund</span><span>Weight</span><span>Est. money</span>
+      </div>${rows}`;
+    document.getElementById('scrim').classList.add('open');
+    document.getElementById('drawer').classList.add('open');
+    App.openFund = null;
+  }catch(e){
+    console.warn(e);
+  }
+}
+
+document.getElementById('ovSelectAll').addEventListener('click', () => {
+  App.overlap.funds.forEach(f => App.overlap.selected.add(f.fund));
+  renderOverlapFunds();
+  loadOverlap(false);
+});
+document.getElementById('ovClearFunds').addEventListener('click', () => {
+  App.overlap.selected.clear();
+  renderOverlapFunds();
+  loadOverlap(false);
+});
+document.getElementById('ovFundSearch').addEventListener('input', e => {
+  App.overlap.fundQuery = e.target.value || '';
+  renderOverlapFunds();
+});
+document.querySelectorAll('.ov-tab').forEach(btn => {
+  btn.addEventListener('click', () => setOverlapTab(btn.dataset.ovtab));
+});
+
+function profileName(){
+  if(App.mode.type==='dial') return 'Dial · '+dialName(App.mode.t);
+  if(App.mode.type==='custom') return 'Custom weights';
+  const p = (App.profiles?.profiles||[]).find(x=>x.key===App.mode.profile);
+  return p ? p.name : App.mode.profile;
+}
+function setActiveName(){ /* meta filled in ingest */ }
+
+/* ============================================================
+   TABLE RENDER
+   ============================================================ */
+function renderHead(){
+  const head = document.getElementById('rankHead');
+  // group row
+  let g = '<tr class="grouprow"><th class="col-rank sticky-l"></th><th class="col-fund sticky-l"></th><th class="col-score"></th>';
+  GROUPS.forEach(grp => { g += `<th colspan="${grp.cols.length}">${grp.label}</th>`; });
+  g += '</tr>';
+  // column row
+  let c = '<tr class="colrow">';
+  c += thCell('rank','Rank','col-rank sticky-l',true);
+  c += thCell('name','Fund','col-fund sticky-l',true);
+  c += thCell('score','Score','col-score');
+  ALLCOLS.forEach(col => { c += thCell(col[0], col[1]); });
+  c += '</tr>';
+  head.innerHTML = g + c;
+  head.querySelectorAll('th[data-key]').forEach(th => {
+    th.querySelector('.th-in').onclick = () => toggleSort(th.dataset.key);
+  });
+  reflectSortUI();
+}
+function thCell(key,label,cls,left){
+  const arrow = '<svg class="sortarrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M6 13l6 6 6-6"/></svg>';
+  return `<th class="${cls||''}" data-key="${key}"><div class="th-in">${label}${arrow}</div></th>`;
+}
+function toggleSort(key){
+  if(App.sort.key === key){ App.sort.dir *= -1; }
+  else { App.sort.key = key; App.sort.dir = (key==='name') ? 1 : -1; }
+  reflectSortUI();
+  renderTable(true);
+}
+function reflectSortUI(){
+  document.querySelectorAll('#rankHead th[data-key]').forEach(th=>{
+    th.classList.toggle('sorted', th.dataset.key===App.sort.key);
+    th.classList.toggle('desc', th.dataset.key===App.sort.key && App.sort.dir<0);
+  });
+}
+
+function sortedRows(){
+  let r = App.rows.slice();
+  const k = App.sort.key;
+  if(!k) return r; // engine order (already by score)
+  r.sort((a,b)=>{
+    if(k==='rank' || k==='score'){
+      const av = (k==='score')? a.score : (a.score); // rank derives from score
+      const bv = (k==='score')? b.score : (b.score);
+      return (av-bv)*App.sort.dir * (k==='rank'?-1:1);
+    }
+    if(k==='name') return a.name.localeCompare(b.name)*App.sort.dir;
+    let av=a[k], bv=b[k];
+    const an=(av===null||av===undefined||isNaN(av)), bn=(bv===null||bv===undefined||isNaN(bv));
+    if(an&&bn) return 0; if(an) return 1; if(bn) return -1; // nulls last
+    return (av-bv)*App.sort.dir;
+  });
+  return r;
+}
+
+/* grade colour for a cell */
+function gradeColor(key, v, stats){
+  if(v===null||v===undefined||isNaN(v)) return null;
+  const s = stats[key]; if(!s || s.max===s.min) return null;
+  let t = (v - s.min)/(s.max - s.min);          // 0..1 low..high
+  if(!DIR[key]) t = 1 - t;                        // lower is better -> invert
+  // skip valuation/aum tinting subtlety: still tint but gentle
+  const hue = 158 - (158-38)*(1-t);               // green(158) -> amber/red(38)
+  const lbg = getComputedStyle(document.documentElement).getPropertyValue('--grade-bg-l').trim() || '0.3';
+  const strength = Math.abs(t-0.5)*2;             // stronger at extremes
+  const alpha = 0.10 + strength*0.34;
+  return `oklch(${lbg} 0.11 ${hue} / ${alpha})`;
+}
+function computeStats(){
+  const stats = {};
+  ALLCOLS.forEach(col=>{
+    const k = col[0];
+    const vals = App.rows.map(f=>f[k]).filter(v=>v!==null&&v!==undefined&&!isNaN(v));
+    if(vals.length){ stats[k]={min:Math.min(...vals),max:Math.max(...vals)}; }
+  });
+  return stats;
+}
+
+function renderTable(animate){
+  if(!document.getElementById('rankHead').children.length) renderHead();
+  const body = document.getElementById('rankBody');
+  const rows = sortedRows();
+  const stats = computeStats();
+  const maxScore = Math.max(100, ...rows.map(r=>r.score||0));
+
+  // FLIP: capture old positions
+  const first = {};
+  if(animate){
+    body.querySelectorAll('tr[data-name]').forEach(tr=>{
+      first[tr.dataset.name] = tr.getBoundingClientRect().top;
+    });
+  }
+
+  // build rows
+  body.innerHTML = rows.map((f,i)=>rowHTML(f,i,stats,maxScore)).join('');
+
+  // animate score bars from 0
+  requestAnimationFrame(()=>{
+    body.querySelectorAll('.scorebar-fill').forEach(el=>{
+      el.style.width = el.dataset.w+'%';
+    });
+  });
+
+  // FLIP play
+  if(animate){
+    body.querySelectorAll('tr[data-name]').forEach(tr=>{
+      const oldTop = first[tr.dataset.name];
+      if(oldTop===undefined) { tr.animate([{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'none'}],{duration:300,easing:'ease'}); return; }
+      const delta = oldTop - tr.getBoundingClientRect().top;
+      if(Math.abs(delta) > 1){
+        tr.animate([{transform:`translateY(${delta}px)`},{transform:'none'}],
+          {duration:380,easing:'cubic-bezier(.22,.61,.36,1)'});
+      }
+    });
+  }
+
+  // wire row clicks
+  body.querySelectorAll('tr[data-name]').forEach(tr=>{
+    tr.onclick = () => openFund(tr.dataset.name);
+    tr.setAttribute('tabindex','0');
+    tr.setAttribute('role','button');
+    tr.onkeydown = ev => { if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); openFund(tr.dataset.name);} };
+  });
+
+  // store new ranks for next delta
+  const newRank = {}; rows.forEach((f,i)=>newRank[f.name]=i);
+  App.prevRank = newRank;
+
+  renderCards(rows, stats);
+  moveGlider();
+}
+
+function rowHTML(f,i,stats,maxScore){
+  const best = (i===0 && !App.sort.key) || (App.sort.key==='score' && App.sort.dir<0 && i===0);
+  const isBest = (i===0 && (!App.sort.key));
+  const prev = App.prevRank[f.name];
+  let delta = '';
+  if(prev!==undefined && prev!==i){
+    const d = prev - i;
+    delta = `<span class="rk-delta ${d>0?'up':'down'}">${d>0?'▲':'▼'}${Math.abs(d)}</span>`;
+  }
+  const glyph = (f.amc||f.name||'?').replace(/[^A-Za-z]/g,'').slice(0,2).toUpperCase() || '··';
+  const w = Math.max(2, (f.score/ (maxScore||100))*100);
+  let cells = '';
+  ALLCOLS.forEach(col=>{
+    const k=col[0]; const raw=f[k]; const txt=fmt(k,raw);
+    const gc = gradeColor(k, raw, stats);
+    const bg = gc ? `<span class="gbg" style="background:${gc}"></span>` : '';
+    cells += `<td class="${gc?'graded':''}">${bg}<span class="cell-val ${txt===null?'cell-null':''}">${txt===null?'–':txt}</span></td>`;
+  });
+  const navInfo = App.navs[f.name];
+  const navHtml = navInfo && navInfo.nav!=null
+    ? `<span class="fund-nav" data-fund-nav="${escapeAttr(f.name)}">₹${Number(navInfo.nav).toFixed(2)}<span class="nav-date">${escapeHTML(navInfo.date||'')}</span></span>`
+    : `<span class="fund-nav is-loading" data-fund-nav="${escapeAttr(f.name)}">NAV…</span>`;
+  return `<tr data-name="${escapeAttr(f.name)}" class="${isBest?'is-best':''}">
+    <td class="col-rank sticky-l">${isBest?'<span class="best-ribbon"></span>':''}<div class="rankcell">${i+1}${delta}</div></td>
+    <td class="col-fund sticky-l">
+      <div class="fundcell">
+        <span class="fund-glyph">${glyph}</span>
+        <span class="fund-txt"><span class="fund-name">${escapeHTML(f.name)}</span><span class="fund-amc">${escapeHTML(f.amc||'')}</span>${navHtml}</span>
+      </div>
+    </td>
+    <td class="col-score">
+      <div class="scorecell">
+        <span class="scorebar-track"><span class="scorebar-fill" data-w="${w.toFixed(1)}"></span></span>
+        <span class="scoreval">${f.score!=null?f.score.toFixed(1):'–'}</span>
+      </div>
+    </td>${cells}
+  </tr>`;
+}
+
+function renderCards(rows, stats){
+  const wrap = document.getElementById('cardList');
+  const keys = [['cagr','CAGR'],['r5','5Y'],['sharpe','Sharpe'],['sd','Std Dev'],['beta','Beta'],['var','VaR']];
+  wrap.innerHTML = rows.map((f,i)=>`
+    <div class="fcard ${i===0&&!App.sort.key?'is-best':''}" data-name="${escapeAttr(f.name)}" role="button" tabindex="0">
+      <div class="fcard-top">
+        <span class="fcard-rank">${i+1}</span>
+        <span><span class="fcard-name">${escapeHTML(f.name)}</span><br><span class="fcard-amc">${escapeHTML(f.amc||'')}</span></span>
+        <span class="fcard-score"><span class="v">${f.score!=null?f.score.toFixed(1):'–'}</span></span>
+      </div>
+      <div class="fcard-metrics">
+        ${keys.map(([k,l])=>`<div class="m"><span class="k">${l}</span><span class="v">${fmt(k,f[k])??'–'}</span></div>`).join('')}
+      </div>
+    </div>`).join('');
+  wrap.querySelectorAll('.fcard').forEach(c=>{
+    c.onclick=()=>openFund(c.dataset.name);
+    c.onkeydown=ev=>{ if(ev.key==='Enter'){openFund(c.dataset.name);} };
+  });
+}
+
+/* ============================================================
+   STATES
+   ============================================================ */
+function showSkeleton(){
+  const body = document.getElementById('rankBody');
+  if(body.children.length) return; // don't flash skeleton on re-rank
+  if(!document.getElementById('rankHead').children.length) renderHead();
+  body.innerHTML = Array.from({length:8}).map(()=>`
+    <tr><td class="col-rank sticky-l"></td>
+    <td class="col-fund sticky-l"><div class="skel-row"><span class="skel" style="width:30px;height:30px;border-radius:5px"></span><span class="skel" style="width:130px;height:13px"></span></div></td>
+    <td colspan="99"><div class="skel" style="height:13px;width:90%;margin:0 11px"></div></td></tr>`).join('');
+}
+function renderError(e){
+  document.getElementById('rankBody').innerHTML =
+    `<tr><td colspan="99"><div class="errstate">
+      <div class="es-title">Couldn't load rankings</div>
+      <div class="es-sub">${escapeHTML(e.message||'Network error')}.<br>Check that the Fundsconnect API is running at this origin.</div>
+      <button onclick="loadRanking(true)">Retry</button>
+    </div></td></tr>`;
+}
+
+/* ============================================================
+   FUND DETAIL DRAWER
+   ============================================================ */
+let drawerChart = null;
+async function openFund(name){
+  App.openFund = name;
+  const drawer = document.getElementById('drawer');
+  const scrim = document.getElementById('scrim');
+  drawer.classList.add('open'); scrim.classList.add('open');
+  drawer.focus();
+  document.getElementById('drawerBody').innerHTML =
+    `<div style="display:flex;flex-direction:column;gap:14px">${Array.from({length:6}).map(()=>'<div class="skel" style="height:34px"></div>').join('')}</div>`;
+  let detail;
+  try{
+    detail = App.demo ? demoFundDetail(name) : await api('/api/fund/'+encodeURIComponent(name));
+  }catch(err){ detail = demoFundDetail(name); }
+  renderDrawer(detail);
+}
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('scrim').classList.remove('open');
+  App.openFund=null;
+  if(drawerChart){ drawerChart.destroy(); drawerChart=null; }
+}
+document.getElementById('drawerClose').onclick = closeDrawer;
+document.getElementById('scrim').onclick = closeDrawer;
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDrawer(); });
+
+function renderDrawer(detail){
+  const f = detail.fund;
+  const rank = App.rows.findIndex(r=>r.name===f.name)+1;
+  document.getElementById('drRank').innerHTML =
+    `${rank>0?`Rank #${rank} in ${App.category}`:''}<span class="chip">${escapeHTML(f.category||App.category)}</span>`;
+  document.getElementById('drTitle').textContent = f.name;
+  document.getElementById('drSub').innerHTML =
+    `${escapeHTML(f.amc||'')} · AUM ${fmt('aum',f.aum)??'–'} · TER ${fmt('ter',f.ter)??'–'}`;
+
+  const scores = detail.scores_by_profile || {};
+  const profOrder = (App.profiles?.order) || ['conservative','balanced','growth','aggressive'];
+  const profLabels = {conservative:'Conservative',balanced:'Balanced',growth:'Growth',aggressive:'Aggressive'};
+
+  const scoreCards = profOrder.map(p=>{
+    const sc = scores[p]; const act = App.mode.type==='profile' && App.mode.profile===p;
+    return `<div class="profscore ${act?'active':''}">
+      <div class="ps-name">${profLabels[p]||p}</div>
+      <div class="ps-val">${sc!=null?sc.toFixed(1):'–'}<small> / 100</small></div>
+      <div class="ps-bar"><i style="width:${sc!=null?sc:0}%"></i></div>
+    </div>`;
+  }).join('');
+
+  const statSec = (title, keys) => `
+    <div class="dsec"><div class="dsec-title">${title}</div><div class="statgrid">
+      ${keys.map(k=>{
+        const c=ALLCOLS.find(x=>x[0]===k)||[k,k]; const v=fmt(k,f[k]);
+        return `<div class="statrow"><span class="sr-k">${c[1]}</span><span class="sr-v">${v??'–'}</span></div>`;
+      }).join('')}
+    </div></div>`;
+
+  document.getElementById('drawerBody').innerHTML = `
+    <div class="dsec">
+      <div class="dsec-title">Score across strategies</div>
+      <div class="profscores">${scoreCards}</div>
+    </div>
+    <div class="dsec">
+      <div class="dsec-title">Percentile profile · ${App.category}</div>
+      <div class="radar-wrap"><canvas id="drawerCanvas"></canvas></div>
+    </div>
+    ${statSec('Returns', ['cagr','r1','r3','r5','r7','r10','r15'])}
+    ${statSec('Risk-adjusted', ['sharpe','sortino','infratio','upcap','downcap'])}
+    ${statSec('Risk', ['beta','sd','var','var95_annual','var99_annual','cvar95_annual'])}
+    ${statSec('Valuation', ['pe','pb','ter','aum'])}
+  `;
+  renderDrawerChart(f.name, f);
+}
+
+function percentileOf(key, val){
+  const vals = App.rows.map(r=>r[key]).filter(v=>v!=null&&!isNaN(v));
+  if(val==null||isNaN(val)||!vals.length) return null;
+  let below = vals.filter(v=> DIR[key] ? v<val : v>val).length;
+  return Math.round(below/vals.length*100);
+}
+function renderDrawerChart(name, fund){
+  const f = fund || App.rows.find(r=>r.name===name); if(!f) return;
+  const canvas = document.getElementById('drawerCanvas'); if(!canvas) return;
+  const radarKeys = ['cagr','r5','sharpe','sortino','infratio','upcap','downcap','beta','sd','var'];
+  const labels = radarKeys.map(k=>(ALLCOLS.find(c=>c[0]===k)||[k,k])[1]);
+  const pcts = radarKeys.map(k=>percentileOf(k,f[k]) ?? 0);
+  const css = getComputedStyle(document.documentElement);
+  const accent = css.getPropertyValue('--accent').trim();
+  const ink = css.getPropertyValue('--ink-2').trim();
+  const muted = css.getPropertyValue('--faint').trim();
+  const line = css.getPropertyValue('--line').trim();
+
+  if(drawerChart){ drawerChart.destroy(); drawerChart=null; }
+  if(typeof Chart === 'undefined'){
+    // fallback: horizontal bars
+    canvas.closest('.radar-wrap').innerHTML = radarKeys.map((k,i)=>`
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:7px">
+        <span style="width:64px;font-size:10px;color:var(--muted);font-family:'IBM Plex Mono'">${labels[i]}</span>
+        <span style="flex:1;height:8px;background:var(--line);border-radius:4px;overflow:hidden"><span style="display:block;height:100%;width:${pcts[i]}%;background:var(--accent)"></span></span>
+        <span class="num" style="width:34px;text-align:right;font-size:11px">${pcts[i]}</span>
+      </div>`).join('');
+    return;
+  }
+  drawerChart = new Chart(canvas, {
+    type:'radar',
+    data:{ labels, datasets:[{
+      label:'Percentile', data:pcts,
+      fill:true, backgroundColor:accent.replace(')',' / 0.16)').replace('oklch','oklch'),
+      borderColor:accent, borderWidth:1.5,
+      pointBackgroundColor:accent, pointRadius:2.5, pointHoverRadius:4,
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>` ${c.label}: ${c.raw}th pctile`}}},
+      scales:{ r:{
+        min:0,max:100,
+        grid:{color:line}, angleLines:{color:line},
+        pointLabels:{color:ink,font:{size:10,family:'IBM Plex Mono'}},
+        ticks:{display:false,stepSize:25}
+      }}
+    }
+  });
+}
+
+/* ============================================================
+   GLOSSARY  /  METRICS & FORMULAS
+   ============================================================ */
+function renderGlossary(){
+  const wrap = document.getElementById('glossary');
+  const metrics = (App.glossary && App.glossary.metrics) || demoGlossary().metrics;
+  // group
+  const byGroup = {};
+  Object.entries(metrics).forEach(([key,m])=>{
+    const g = m.group || 'Other';
+    (byGroup[g] = byGroup[g]||[]).push([key,m]);
+  });
+  const order = ['Returns','Risk-adjusted','Risk','Valuation','Other'];
+  const groups = Object.keys(byGroup).sort((a,b)=>{
+    const ia=order.indexOf(a), ib=order.indexOf(b);
+    return (ia<0?99:ia)-(ib<0?99:ib);
+  });
+  wrap.innerHTML = `
+    <p class="gloss-intro">Every fund is scored by a transparent, <b>weighted-percentile engine</b>. No black boxes — here is each metric, how it's computed, and which direction is good.</p>
+    <p class="gloss-lede">Within a category, each fund's value for a metric is converted to a 0–100 percentile (flipped where lower is better), then blended by the active strategy's weights into the final score.</p>
+    ${groups.map(g=>`
+      <div class="gloss-group">
+        <h3 class="gloss-group-h">${g}</h3>
+        <div class="gloss-grid">
+          ${byGroup[g].map(([key,m])=>`
+            <div class="gloss-card">
+              <div class="gloss-card-h">
+                <span class="gc-label">${escapeHTML(m.label||key)}</span>
+                <span class="gc-dir ${m.direction==='higher'?'higher':'lower'}">${m.direction==='higher'?'↑ higher is better':'↓ lower is better'}</span>
+              </div>
+              <div class="gloss-formula">${formatFormula(m.formula||'')}</div>
+              <div class="gloss-meaning">${escapeHTML(m.meaning||'')}</div>
+              ${m.range?`<div class="gloss-range">Typical range · ${escapeHTML(m.range)}</div>`:''}
+            </div>`).join('')}
+        </div>
+      </div>`).join('')}`;
+}
+function formatFormula(s){
+  if(!s) return '';
+  // render "a / b" as a stacked fraction when simple
+  const m = s.match(/^(.+?)\s*\/\s*(.+)$/);
+  if(m && !m[1].includes('(') && m[1].length<40 && m[2].length<40){
+    return `<span class="frac"><span class="top">${escapeHTML(m[1].trim())}</span><span class="bot">${escapeHTML(m[2].trim())}</span></span>`;
+  }
+  return escapeHTML(s);
+}
+
+/* ============================================================
+   POLLING  /api/data-status  (quiet refresh + badge flash)
+   ============================================================ */
+function startPolling(){
+  if(App.pollTimer) clearInterval(App.pollTimer);
+  App.pollTimer = setInterval(async ()=>{
+    if(App.demo) return;
+    try{
+      const st = await api('/api/data-status');
+      updateBadge(st.source, st.updated_at);
+      if(App.lastTs!=null && st.updated_ts!=null && st.updated_ts!==App.lastTs){
+        flashBadge();
+        await loadRanking(true); // quiet refresh (no skeleton because rows exist)
+      }
+      App.lastTs = st.updated_ts;
+    }catch(e){ /* stay quiet */ }
+  }, 5000);
+}
+function updateBadge(src, updated){
+  document.getElementById('lbSrc').textContent = src || (App.demo?'bundled dataset':'live');
+  document.getElementById('lbTime').textContent = updated ? ('updated '+relTime(updated)) : '';
+}
+function flashBadge(){
+  const b = document.getElementById('liveBadge');
+  b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash');
+}
+function relTime(ts){
+  let d = (typeof ts==='number') ? new Date(ts*1000) : new Date(ts);
+  if(isNaN(d)) return String(ts);
+  const s = Math.round((Date.now()-d)/1000);
+  if(s<60) return s+'s ago';
+  if(s<3600) return Math.round(s/60)+'m ago';
+  if(s<86400) return Math.round(s/3600)+'h ago';
+  return d.toLocaleDateString();
+}
+
+/* ============================================================
+   UTIL
+   ============================================================ */
+function escapeHTML(s){ return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function escapeAttr(s){ return escapeHTML(s).replace(/'/g,'&#39;'); }
+function paint(){
+  // re-grade cells on theme change without re-animating
+  if(App.rows.length && App.view==='rank') renderTable(false);
+}
+
+/* ============================================================
+   DEMO DATA  (preview only — never used when API responds)
+   ============================================================ */
+function enableDemo(){
+  App.demo = true;
+  document.getElementById('demoBanner').classList.add('show');
+  const d = DEMO();
+  App.meta = { status:'ok', funds:d.funds.length, categories:Object.keys(d.byCat), source:'bundled dataset', updated_at:new Date().toISOString() };
+  App.profiles = DEMO_PROFILES;
+  App.glossary = demoGlossary();
+  if(App.category == null) App.category = '';   // default to All categories
+  updateBadge('bundled dataset', new Date().toISOString());
+}
+const DEMO_PROFILES = {
+  order: REAL.profiles.map(p=>p.key),
+  dial: { low:'balanced', high:'aggressive', note: REAL.dialNote },
+  profiles: REAL.profiles
+};
+function dialWeights(t){
+  const a=DEMO_PROFILES.profiles.find(p=>p.key==='balanced').weights;
+  const b=DEMO_PROFILES.profiles.find(p=>p.key==='aggressive').weights;
+  const keys=new Set([...Object.keys(a),...Object.keys(b)]); const w={};
+  keys.forEach(k=>{ w[k]=(a[k]||0)*(1-t)+(b[k]||0)*t; });
+  return w;
+}
+function scoreFunds(funds, weights, dirOver){
+  dirOver = dirOver || {};
+  const keys = Object.keys(weights).filter(k=>weights[k]>0);
+  const sorted = {};
+  keys.forEach(k=>{ sorted[k]=funds.map(f=>f[k]).filter(v=>v!=null&&!isNaN(v)).sort((a,b)=>a-b); });
+  function pctOf(k,v){
+    const vals=sorted[k]; if(v==null||isNaN(v)||!vals.length) return null;
+    let below=0,eq=0; for(const x of vals){ if(x<v) below++; else if(x===v) eq++; }
+    let p=(below+(eq+1)/2)/vals.length*100;
+    const dir = (k in dirOver) ? dirOver[k] : DIR[k];
+    return dir===0 ? 100-p : p;
+  }
+  return funds.map(f=>{
+    let acc=0, wsum=0;
+    keys.forEach(k=>{ const sc=pctOf(k,f[k]); if(sc!=null){ acc+=weights[k]*sc; wsum+=weights[k]; } });
+    return {...f, score: wsum>0 ? Math.round(acc/wsum*10)/10 : null};
+  });
+}
+function currentWeightsLocal(){
+  if(App.mode.type==='dial'){
+    return { weights: dialWeights(App.mode.t), dirOver: App.mode.t>=0.5 ? {beta:1} : {} };
+  }
+  const p=DEMO_PROFILES.profiles.find(x=>x.key===App.mode.profile)||DEMO_PROFILES.profiles[1];
+  const dirOver={}; if(p.dir_over) Object.keys(p.dir_over).forEach(k=>dirOver[k]= p.dir_over[k]==='max'?1:0);
+  return { weights:p.weights, dirOver };
+}
+function demoRank(){
+  const d=DEMO();
+  const {weights,dirOver}=currentWeightsLocal();
+  let out=[];
+  if(App.category){ out=scoreFunds((d.byCat[App.category]||[]).slice(),weights,dirOver).sort((a,b)=>b.score-a.score); }
+  else { Object.keys(d.byCat).sort().forEach(c=>{ out=out.concat(scoreFunds(d.byCat[c].slice(),weights,dirOver).sort((a,b)=>b.score-a.score)); }); }
+  if(App.filters.minHistory) out=out.filter(f=>f.r5!=null);
+  if(App.filters.topN){ const seen={}; out=out.filter(f=>{ seen[f.category]=seen[f.category]||0; return seen[f.category]++ < App.filters.topN; }); }
+  return { profile:App.mode.profile, profile_name:profileName(), count:out.length, funds:out };
+}
+function demoFundDetail(name){
+  const d=DEMO(); const f=d.funds.find(x=>x.name===name);
+  if(!f) return { fund:null, scores_by_profile:{} };
+  const cat=d.byCat[f.category]||[]; const scores={};
+  DEMO_PROFILES.profiles.forEach(p=>{
+    const dirOver={}; if(p.dir_over) Object.keys(p.dir_over).forEach(k=>dirOver[k]= p.dir_over[k]==='max'?1:0);
+    const sc=scoreFunds(cat,p.weights,dirOver).find(x=>x.name===name);
+    scores[p.key]=sc?sc.score:null;
+  });
+  return { fund:f, scores_by_profile:scores };
+}
+
+let _demoCache=null;
+function DEMO(){
+  if(_demoCache) return _demoCache;
+  const cols=REAL.cols;
+  const funds=REAL.rows.map(r=>{ const o={}; cols.forEach((c,i)=>o[c]=r[i]); return o; });
+  const byCat={}; funds.forEach(f=>{ (byCat[f.category]=byCat[f.category]||[]).push(f); });
+  _demoCache={funds,byCat}; return _demoCache;
+}
+function demoGlossary(){ return { metrics: REAL.glossary }; }
+
+/* ============================================================
+   GO
+   ============================================================ */
+boot();
+</script>
+</body>
+</html>
