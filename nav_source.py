@@ -13,6 +13,7 @@ Notes
 """
 from __future__ import annotations
 import json
+import os
 import re
 import threading
 import time
@@ -296,7 +297,8 @@ def refresh_navs(fund_names: list[str], force_remap: bool = False) -> dict:
         nav["matched_scheme"] = info.get("scheme_name")
         return name, nav, None
 
-    with ThreadPoolExecutor(max_workers=16) as ex:
+    workers = int(os.environ.get("NAV_WORKERS", "4"))
+    with ThreadPoolExecutor(max_workers=max(1, min(workers, 8))) as ex:
         futs = [ex.submit(_work, n) for n in fund_names]
         for fut in as_completed(futs):
             name, nav, err = fut.result()

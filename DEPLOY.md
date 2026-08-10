@@ -2,6 +2,17 @@
 
 Netlify cannot run this app’s Python API. Use **Render** (steps below). Railway works the same idea with the `Procfile` / Dockerfile.
 
+## Speed / “data not loading”
+
+Free Render **spins down** after ~15 min idle. The first request after sleep can take **30–60 seconds** while the container boots.
+
+After that, rankings should appear quickly. Live NAV fills in a few seconds later (intentionally deferred so it doesn’t block the table).
+
+If the page still shows “Local mode” / demo data, wait for the yellow **Waking server** banner to finish retries, then hard-refresh. Keep the tab open once awake — subsequent loads are fast.
+
+Optional Render env vars:
+- `NAV_WORKERS=4` (default) — lower if the service OOMs during NAV refresh
+
 ## What you need
 - GitHub account
 - This project pushed to a **public or private** GitHub repo
