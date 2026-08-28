@@ -53,16 +53,36 @@ STATIC = BASE / "static"
 
 app = FastAPI(title="Fundsconnect — Quantitative Fund Research API", version="1.0")
 
+
+@app.on_event("startup")
+def _warm_caches():
+    """Preload Excel/CSV so the first user request is not the slow path."""
+    try:
+        load_data()
+    except Exception:
+        pass
+    try:
+        load_holdings()
+    except Exception:
+        pass
+
+
 # ----------------------------------------------------------------------
-# data loading  (single category for now; tag every fund so the engine
-# treats them as one peer group. Replace with a real 'category' column
-# when you load multiple fund types.)
+# data loading  (cached by file mtime — critical on Render free tier)
 # ----------------------------------------------------------------------
+_data_cache: dict = {"mtime": None, "df": None}
+
+
 def load_data() -> pd.DataFrame:
-    """Re-read the live data source on every call so Excel edits show up
-    on the next page refresh (no caching)."""
-    df = load_funds()              # reads funds.xlsx if present, else ranked.csv
-    df = enrich_metrics(df)        # add VaR / CVaR
+    """Load funds.xlsx / ranked.csv + enrich. Cached until the file changes."""
+    active = EXCEL_FILE if EXCEL_FILE.exists() else CSV_FILE
+    mtime = active.stat().st_mtime if active.exists() else 0
+    if _data_cache["df"] is not None and _data_cache["mtime"] == mtime:
+        return _data_cache["df"]
+    df = load_funds()
+    df = enrich_metrics(df)
+    _data_cache["mtime"] = mtime
+    _data_cache["df"] = df
     return df
 
 
@@ -95,10 +115,18 @@ DISPLAY_COLS = [
 
 @app.get("/api/health")
 def health():
-    df = load_data()
-    return {"status": "ok", "funds": int(len(df)),
-            "categories": sorted(df["category"].unique().tolist()),
-            **_data_status()}
+    """Lightweight — do not re-score or re-enrich here (Render health checks)."""
+    st = _data_status()
+    n = 0
+    cats: list = []
+    try:
+        df = load_data()
+        n = int(len(df))
+        if "category" in df.columns:
+            cats = sorted(df["category"].dropna().astype(str).unique().tolist())
+    except Exception:
+        pass
+    return {"status": "ok", "funds": n, "categories": cats, **st}
 
 
 @app.get("/api/data-status")
@@ -247,7 +275,7 @@ def overlap(funds: str | None = Query(
     st = holdings_status()
     if h.empty:
         return {
-            "companies": [], "pairwise": [], "funds_used": [],
+            "companies": [], "all_companies": [], "pairwise": [], "funds_used": [],
             "stats": {"rows": 0, "funds": 0, "companies": 0, "overlapping": 0},
             "min_funds": min_funds,
             **st,
