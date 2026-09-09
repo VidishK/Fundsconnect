@@ -11,3 +11,6 @@ holdings.xlsx.bak
 __pycache__/
 *.pyc
 .DS_Store
+
+# Python virtual environment (Cloud Agent dev setup)
+.venv/
