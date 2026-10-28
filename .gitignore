@@ -11,3 +11,12 @@ holdings.xlsx.bak
 __pycache__/
 *.pyc
 .DS_Store
+
+# Secrets and machine-local configuration
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+**/sessions.json
