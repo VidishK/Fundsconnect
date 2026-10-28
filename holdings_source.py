@@ -198,8 +198,24 @@ def holdings_status() -> dict:
     }
 
 
+_holdings_cache: dict = {"sig": None, "df": None}
+
+
 def load_holdings() -> pd.DataFrame:
-    """Load + clean holdings. Empty DataFrame if nothing dropped in."""
+    """Load + clean holdings. Cached until source files change."""
+    sig_parts = []
+    if EXCEL_FILE.exists():
+        sig_parts.append(f"x:{EXCEL_FILE.stat().st_mtime}")
+    elif CSV_FILE.exists():
+        sig_parts.append(f"c:{CSV_FILE.stat().st_mtime}")
+    elif HOLDINGS_DIR.is_dir():
+        for p in sorted(HOLDINGS_DIR.iterdir()):
+            if p.suffix.lower() in (".xlsx", ".xls", ".csv") and not p.name.startswith("."):
+                sig_parts.append(f"{p.name}:{p.stat().st_mtime}")
+    sig = "|".join(sig_parts) or "empty"
+    if _holdings_cache["df"] is not None and _holdings_cache["sig"] == sig:
+        return _holdings_cache["df"]
+
     parts: list[pd.DataFrame] = []
     source = None
 
@@ -227,12 +243,16 @@ def load_holdings() -> pd.DataFrame:
     if not parts:
         df = pd.DataFrame(columns=CANONICAL)
         df.attrs["source"] = None
+        _holdings_cache["sig"] = sig
+        _holdings_cache["df"] = df
         return df
 
     df = pd.concat([p for p in parts if len(p)], ignore_index=True)
     if df.empty:
         df = pd.DataFrame(columns=CANONICAL)
     df.attrs["source"] = source
+    _holdings_cache["sig"] = sig
+    _holdings_cache["df"] = df
     return df
 
 

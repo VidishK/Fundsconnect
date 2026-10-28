@@ -56,7 +56,7 @@
 }
 
 *{box-sizing:border-box}
-html,body{margin:0;padding:0}
+html,body{margin:0;padding:0;height:100%}
 body{
   background:var(--bg);
   color:var(--ink);
@@ -67,6 +67,9 @@ body{
   letter-spacing:.005em;
   min-height:100vh;
   position:relative;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
 }
 /* film-grain overlay */
 body::before{
@@ -83,13 +86,26 @@ body::before{
 /* ============================ HEADER ============================ */
 header.topbar{
   position:sticky;top:0;z-index:60;
-  display:flex;align-items:center;gap:28px;
-  padding:0 26px;height:60px;
-  background:color-mix(in oklch, var(--bg) 86%, transparent);
+  display:flex;align-items:center;gap:18px;
+  padding:0 20px;height:56px;flex-shrink:0;
+  background:color-mix(in oklch, var(--bg) 92%, transparent);
   backdrop-filter:blur(14px) saturate(1.4);
   border-bottom:1px solid var(--line);
 }
 .brand{display:flex;align-items:baseline;gap:11px;flex:none}
+.topnav{
+  display:flex;align-items:center;gap:0;flex:none;
+  border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;
+}
+.topnav button{
+  appearance:none;border:none;background:var(--panel);color:var(--muted);cursor:pointer;
+  padding:7px 12px;font-size:11.5px;font-weight:600;transition:all 140ms;
+  border-right:1px solid var(--line-2);display:flex;align-items:center;gap:6px;
+  font-family:inherit;white-space:nowrap;
+}
+.topnav button:last-child{border-right:none}
+.topnav button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.topnav button svg{width:13px;height:13px;flex:none}
 .brand .mark{
   font-family:"Newsreader",serif;font-weight:600;font-size:23px;letter-spacing:-.01em;
   color:var(--ink);
@@ -237,24 +253,24 @@ input[type=range].dial::-moz-range-thumb{
 .topn button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
 .topn button:hover{color:var(--ink)}
 .filterbar .spacer{flex:1}
-.viewtoggle{display:flex;gap:0;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
-.viewtoggle button{appearance:none;border:none;background:var(--panel);color:var(--muted);cursor:pointer;padding:6px 14px;font-size:11.5px;font-weight:600;transition:all 140ms;border-right:1px solid var(--line-2);display:flex;align-items:center;gap:6px}
-.viewtoggle button:last-child{border-right:none}
-.viewtoggle button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
-.viewtoggle button svg{width:13px;height:13px}
+/* main views fill remaining viewport — no jump when chrome hides */
+#rankView,#overlapView,#dataView,#glossView{
+  flex:1;min-height:0;overflow:auto;
+}
+#overlapView{display:none;overflow:hidden;flex-direction:column}
+.rank-chrome{flex-shrink:0}
 
 /* overlap view — FundLens layout */
-#overlapView{display:none;height:calc(100vh - 58px);overflow:hidden}
-.ov-shell{display:flex;height:100%;min-height:0}
+.ov-shell{display:flex;height:100%;min-height:0;flex:1}
 .ov-side{
-  width:282px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--line);
+  width:300px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--line);
   display:flex;flex-direction:column;min-height:0;
 }
 .ov-side-hdr{
   padding:12px 16px 8px;font-size:11px;font-weight:700;color:var(--faint);
-  letter-spacing:.08em;text-transform:uppercase;
+  letter-spacing:.08em;text-transform:uppercase;flex-shrink:0;
 }
-.ov-side-search{padding:0 12px 8px}
+.ov-side-search{padding:0 12px 8px;flex-shrink:0}
 .ov-side-search input{
   width:100%;box-sizing:border-box;padding:7px 10px;border-radius:6px;
   border:1px solid var(--line);background:var(--panel-2);color:var(--ink);
@@ -262,21 +278,47 @@ input[type=range].dial::-moz-range-thumb{
 }
 .ov-side-search input::placeholder{color:var(--faint)}
 .ov-side-search input:focus{outline:none;border-color:var(--accent-line)}
+.ov-selected-block{
+  padding:8px 12px 10px;border-bottom:1px solid var(--line-2);flex-shrink:0;
+  background:color-mix(in oklch,var(--accent) 6%,var(--panel));
+}
+.ov-selected-block[hidden]{display:none!important}
+.ov-selected-label{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font-size:10px;font-weight:700;color:var(--faint);letter-spacing:.06em;text-transform:uppercase;
+  margin-bottom:6px;
+}
+.ov-selected-label em{font-style:normal;font-weight:500;letter-spacing:0;text-transform:none;color:var(--muted)}
 .ov-selected-mini{
-  padding:0 12px 8px;display:flex;flex-wrap:wrap;gap:4px;max-height:72px;overflow:auto;
+  display:flex;flex-wrap:wrap;gap:5px;max-height:140px;overflow:auto;
 }
 .ov-selected-mini:empty{display:none}
 .ov-sel-chip{
-  font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;
+  appearance:none;display:inline-flex;align-items:center;gap:5px;max-width:100%;
+  font:inherit;font-size:11px;font-weight:600;padding:4px 7px 4px 9px;border-radius:6px;
   background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-line);
-  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  cursor:pointer;line-height:1.2;text-align:left;
 }
+.ov-sel-chip:hover{background:color-mix(in oklch,var(--bad) 16%,var(--panel));border-color:color-mix(in oklch,var(--bad) 40%,var(--line));color:var(--bad)}
+.ov-sel-chip .ov-sel-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px}
+.ov-sel-chip .ov-sel-x{
+  flex:none;width:16px;height:16px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;line-height:1;opacity:.7;
+  background:color-mix(in oklch,var(--ink) 8%,transparent);
+}
+.ov-sel-chip:hover .ov-sel-x{opacity:1;background:color-mix(in oklch,var(--bad) 22%,transparent)}
 .ov-side-list{flex:1;overflow:auto;padding-bottom:8px}
-.ov-sc-funds{min-width:200px;flex:1.4 1 200px}
+.ov-sc-funds{min-width:220px;flex:1.6 1 220px}
 .ov-selected-names{
-  margin-top:8px;display:flex;flex-wrap:wrap;gap:4px;max-height:52px;overflow:auto;
+  margin-top:8px;display:flex;flex-wrap:wrap;gap:5px;max-height:88px;overflow:auto;
 }
-.ov-selected-names .ov-sel-chip{font-size:10.5px}
+.ov-selected-names .ov-sel-chip{font-size:11px}
+.ov-toolbar{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding:10px 18px;background:var(--panel);border-bottom:1px solid var(--line);flex-shrink:0;
+}
+.ov-toolbar-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ov-toolbar-hint{font-size:11px;color:var(--faint);max-width:340px;line-height:1.35}
 .ov-cat{margin-bottom:2px}
 .ov-cat-row{
   display:flex;align-items:center;justify-content:space-between;
@@ -292,14 +334,25 @@ input[type=range].dial::-moz-range-thumb{
 }
 .ov-cat-all:hover{background:var(--accent-soft)}
 .ov-fund-item{
-  display:flex;align-items:flex-start;gap:8px;padding:6px 14px 6px 22px;
-  cursor:pointer;border-radius:4px;margin:0 4px;
+  display:flex;align-items:flex-start;gap:8px;padding:7px 10px 7px 14px;
+  cursor:pointer;border-radius:6px;margin:1px 6px;
 }
 .ov-fund-item:hover{background:var(--hover)}
+.ov-fund-item.is-on{background:var(--accent-soft)}
+.ov-fund-item.is-on .ov-fund-name{color:var(--accent);font-weight:600}
 .ov-fund-item input{accent-color:var(--accent);margin-top:3px;flex-shrink:0}
+.ov-fund-info{flex:1;min-width:0}
 .ov-fund-name{font-size:12px;font-weight:500;color:var(--ink);line-height:1.3}
 .ov-fund-meta{font-size:10.5px;color:var(--faint);margin-top:1px}
 .ov-fund-meta .navlive{color:var(--good);font-weight:600}
+.ov-fund-desel{
+  appearance:none;flex:none;align-self:center;margin-left:auto;
+  border:1px solid color-mix(in oklch,var(--bad) 35%,var(--line));
+  background:color-mix(in oklch,var(--bad) 12%,var(--panel));
+  color:var(--bad);font-size:10px;font-weight:700;border-radius:5px;
+  padding:4px 8px;cursor:pointer;font-family:inherit;letter-spacing:.02em;
+}
+.ov-fund-desel:hover{background:color-mix(in oklch,var(--bad) 22%,var(--panel));border-color:var(--bad)}
 .ov-side-foot{
   padding:10px 12px;border-top:1px solid var(--line);display:flex;gap:6px;flex-shrink:0;
 }
@@ -308,7 +361,7 @@ input[type=range].dial::-moz-range-thumb{
   color:var(--ink-2);font-size:11px;font-weight:600;border-radius:6px;padding:7px;cursor:pointer;
 }
 .ov-side-foot button:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-line)}
-.ov-main{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+.ov-main{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden}
 .ov-summary{
   display:flex;flex-wrap:wrap;gap:10px;padding:12px 18px;
   background:var(--panel);border-bottom:1px solid var(--line);flex-shrink:0;
@@ -649,9 +702,12 @@ td.graded .gbg{position:absolute;inset:3px 2px;border-radius:3px;z-index:0;opaci
 .errstate button:hover{background:var(--accent);color:var(--bg)}
 
 /* demo notice */
-.demo-banner{display:none;align-items:center;gap:10px;padding:8px 26px;background:color-mix(in oklch,var(--bad) 14%,var(--bg));border-bottom:1px solid color-mix(in oklch,var(--bad) 30%,var(--line));font-size:11px;color:var(--ink-2)}
+.demo-banner{display:none;align-items:center;gap:10px;padding:8px 26px;background:color-mix(in oklch,var(--bad) 14%,var(--bg));border-bottom:1px solid color-mix(in oklch,var(--bad) 30%,var(--line));font-size:11px;color:var(--ink-2);flex-shrink:0}
 .demo-banner.show{display:flex}
 .demo-banner b{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--bad)}
+.wake-banner{display:none;align-items:center;gap:10px;padding:8px 26px;background:color-mix(in oklch,var(--accent) 12%,var(--bg));border-bottom:1px solid color-mix(in oklch,var(--accent) 28%,var(--line));font-size:11px;color:var(--ink-2);flex-shrink:0}
+.wake-banner.show{display:flex}
+.wake-banner b{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
 
 /* mobile cards (hidden on desktop) */
 .cards{display:none;padding:14px;flex-direction:column;gap:12px}
@@ -674,12 +730,14 @@ td.graded .gbg{position:absolute;inset:3px 2px;border-radius:3px;z-index:0;opaci
   .table-scroll{display:none}
   .cards{display:flex}
   .filterbar{gap:12px}
-  header.topbar{gap:14px;padding:0 16px}
+  header.topbar{gap:10px;padding:0 12px}
   .brand .tag{display:none}
+  .topnav button span{display:none}
+  .topnav button{padding:7px 9px}
 }
 </style>
 </head>
-<body style="font-family: system-ui">
+<body>
 
 <!-- ===================== HEADER ===================== -->
 <header class="topbar">
@@ -687,6 +745,20 @@ td.graded .gbg{position:absolute;inset:3px 2px;border-radius:3px;z-index:0;opaci
     <span class="mark">Funds<b>connect</b></span>
     <span class="tag">Quant Research</span>
   </div>
+  <nav class="topnav" id="viewToggle" role="group" aria-label="Switch view">
+    <button type="button" data-view="rank" aria-pressed="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg><span>Rankings</span>
+    </button>
+    <button type="button" data-view="overlap" aria-pressed="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="12" r="5"/><circle cx="15" cy="12" r="5"/></svg><span>Overlap</span>
+    </button>
+    <button type="button" data-view="data" aria-pressed="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 19h16"/></svg><span>Data</span>
+    </button>
+    <button type="button" data-view="gloss" aria-pressed="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>Metrics</span>
+    </button>
+  </nav>
   <div class="spacer"></div>
   <div class="navbadge is-loading" id="navBadge" title="Live NAV from mfapi.in (AMFI). Published once per trading day ~9–9:30pm IST.">
     <span class="nb-label">Live NAV</span>
@@ -704,13 +776,18 @@ td.graded .gbg{position:absolute;inset:3px 2px;border-radius:3px;z-index:0;opaci
   </button>
 </header>
 
-<!-- ===================== DEMO BANNER ===================== -->
+<!-- ===================== WAKE / DEMO BANNERS ===================== -->
+<div class="wake-banner" id="wakeBanner">
+  <b>Waking server</b>
+  <span id="wakeBannerTxt">Free-tier hosts sleep when idle — first load can take 30–60s. Rankings load first; live NAV follows after.</span>
+</div>
 <div class="demo-banner" id="demoBanner">
   <b>Local mode</b>
   <span>Computing locally in your browser from the bundled dataset using the same scoring engine (59 funds). Start the server (run.sh) to enable live Excel updates.</span>
 </div>
 
-<!-- ===================== CONTROLS ===================== -->
+<!-- ===================== RANKINGS CONTROLS (hidden on other tabs) ===================== -->
+<div class="rank-chrome" id="rankChrome">
 <section class="controls">
   <div class="ctl-block">
     <span class="ctl-label">Peer Group <span class="hint">— funds rank within category</span></span>
@@ -787,21 +864,8 @@ td.graded .gbg{position:absolute;inset:3px 2px;border-radius:3px;z-index:0;opaci
   </div>
   <div class="spacer"></div>
   <span class="meta" id="rankMeta">—</span>
-  <div class="viewtoggle" id="viewToggle" role="group" aria-label="Switch view">
-    <button data-view="rank" aria-pressed="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>Rankings
-    </button>
-    <button data-view="overlap" aria-pressed="false">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="12" r="5"/><circle cx="15" cy="12" r="5"/></svg>Overlap
-    </button>
-    <button data-view="data" aria-pressed="false">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 19h16"/></svg>Data
-    </button>
-    <button data-view="gloss" aria-pressed="false">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Metrics &amp; Formulas
-    </button>
-  </div>
 </div>
+</div><!-- /rankChrome -->
 
 <!-- ===================== RANKINGS VIEW ===================== -->
 <main id="rankView">
@@ -819,10 +883,16 @@ td.graded .gbg{position:absolute;inset:3px 2px;border-radius:3px;z-index:0;opaci
   <div class="ov-shell">
     <aside class="ov-side">
       <div class="ov-side-hdr">Select funds</div>
+      <div class="ov-selected-block" id="ovSelectedBlock" hidden>
+        <div class="ov-selected-label">
+          <span>Selected <span id="ovSelectedCount">0</span></span>
+          <button type="button" class="ov-cat-all" id="ovClearSelectedTop" title="Clear all selected">Clear</button>
+        </div>
+        <div class="ov-selected-mini" id="ovSelectedMini"></div>
+      </div>
       <div class="ov-side-search">
         <input type="search" id="ovFundSearch" placeholder="Search all funds…" autocomplete="off" />
       </div>
-      <div class="ov-selected-mini" id="ovSelectedMini"></div>
       <div class="ov-side-list" id="ovFundList"></div>
       <div class="ov-side-foot">
         <button type="button" id="ovSelectAll">All</button>
@@ -833,7 +903,7 @@ td.graded .gbg{position:absolute;inset:3px 2px;border-radius:3px;z-index:0;opaci
       <div class="ov-summary" id="ovSummary">
         <div class="ov-sc ov-sc-funds">
           <div class="ov-sv" id="ovScFunds">0</div>
-          <div class="ov-sl">Funds selected</div>
+          <div class="ov-sl">Funds selected · click chip to deselect</div>
           <div class="ov-selected-names" id="ovSelectedNames"></div>
         </div>
         <div class="ov-sc purple"><div class="ov-sv" id="ovScOverlap">—</div><div class="ov-sl">Overlapping companies</div></div>
@@ -841,6 +911,20 @@ td.graded .gbg{position:absolute;inset:3px 2px;border-radius:3px;z-index:0;opaci
         <div class="ov-sc orange"><div class="ov-sv" id="ovScCrowded">—</div><div class="ov-sl" id="ovScCrowdedLabel">Most commonly held</div></div>
         <div class="ov-sc"><div class="ov-sv" id="ovScValue">—</div><div class="ov-sl">Best value pick</div></div>
         <a class="ov-linkout" href="https://vk-fundlens.netlify.app/" target="_blank" rel="noopener">Open FundLens ↗</a>
+      </div>
+      <div class="ov-toolbar" id="ovToolbar">
+        <div class="ov-toolbar-left">
+          <div class="ov-sort" id="ovRankSort">
+            <span>Rank by</span>
+            <button type="button" data-ovsort="common" aria-pressed="true">Most common</button>
+            <button type="button" data-ovsort="avg_weight" aria-pressed="false">Avg weight</button>
+            <button type="button" data-ovsort="exposure" aria-pressed="false">₹ exposure</button>
+          </div>
+          <label class="ov-min-ctl">Min funds
+            <input type="number" id="ovMinFundsInput" min="2" max="50" value="2" />
+          </label>
+        </div>
+        <div class="ov-toolbar-hint" id="ovRankHint">Ranked by how many selected funds hold each stock.</div>
       </div>
       <div class="ov-tabs" role="tablist">
         <button type="button" class="ov-tab" data-ovtab="overlap" aria-selected="true">Company Overlap</button>
@@ -1032,37 +1116,80 @@ applyThemeIcon();
 /* ============================================================
    API LAYER  (falls back to demo dataset when offline)
    ============================================================ */
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+function setWakeBanner(on, msg){
+  const el = document.getElementById('wakeBanner');
+  if(!el) return;
+  el.classList.toggle('show', !!on);
+  if(msg){
+    const t = document.getElementById('wakeBannerTxt');
+    if(t) t.textContent = msg;
+  }
+}
+
 async function api(path, opts){
   const o = opts || {};
-  const { headers: extraHeaders, ...rest } = o;
-  const res = await fetch(path, {
-    ...rest,
-    headers:{ 'Accept':'application/json', ...(extraHeaders || {}) },
-  });
-  if(!res.ok){
-    let detail = '';
-    try{ const j = await res.json(); detail = j.detail || j.message || ''; }catch(_){}
-    throw new Error((detail || ('HTTP '+res.status)) + ' for '+path);
+  const timeoutMs = o.timeoutMs != null ? o.timeoutMs : 90000;
+  const { headers: extraHeaders, timeoutMs: _t, ...rest } = o;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try{
+    const res = await fetch(path, {
+      ...rest,
+      signal: ctrl.signal,
+      headers:{ 'Accept':'application/json', ...(extraHeaders || {}) },
+    });
+    if(!res.ok){
+      let detail = '';
+      try{ const j = await res.json(); detail = j.detail || j.message || ''; }catch(_){}
+      throw new Error((detail || ('HTTP '+res.status)) + ' for '+path);
+    }
+    return await res.json();
+  }catch(e){
+    if(e && e.name === 'AbortError') throw new Error('timeout for '+path);
+    throw e;
+  }finally{
+    clearTimeout(timer);
   }
-  return res.json();
 }
 
 async function boot(){
-  try{
-    const [health, profiles, glossary] = await Promise.all([
-      api('/api/health'), api('/api/profiles'), api('/api/glossary')
-    ]);
-    App.meta = health; App.profiles = profiles; App.glossary = glossary;
-    App.category = '';   // '' => All categories (small + large together)
-  }catch(e){
-    console.warn('[Fundsconnect] API unreachable, entering demo mode:', e.message);
+  setWakeBanner(true, 'Contacting server… free-tier hosts can take 30–60s on first wake.');
+  let ok = false;
+  const attempts = 8;
+  for(let i=0; i<attempts; i++){
+    try{
+      const [health, profiles, glossary] = await Promise.all([
+        api('/api/health', { timeoutMs: 45000 }),
+        api('/api/profiles', { timeoutMs: 45000 }),
+        api('/api/glossary', { timeoutMs: 45000 }),
+      ]);
+      App.meta = health; App.profiles = profiles; App.glossary = glossary;
+      App.category = '';
+      ok = true;
+      break;
+    }catch(e){
+      console.warn('[boot] attempt', i+1, e.message);
+      setWakeBanner(true, `Waking server (try ${i+1}/${attempts})… ${e.message}`);
+      await sleep(2500 + i*1500);
+    }
+  }
+  if(!ok){
+    console.warn('[Fundsconnect] API unreachable after retries, entering demo mode');
+    setWakeBanner(false);
     enableDemo();
+  } else {
+    setWakeBanner(false);
   }
   buildControls();
   renderGlossary();
-  await loadRanking(false);   // initial paint is instant; animate only on re-rank
+  await loadRanking(false);
   startPolling();
-  if(!App.demo) startLiveNAV(true);
+  // Defer live NAV so rankings stay responsive on cold starts
+  if(!App.demo){
+    setTimeout(() => startLiveNAV(true), 2500);
+  }
 }
 
 /* ---------- Live NAV (mfapi.in / AMFI) ---------- */
@@ -1071,7 +1198,7 @@ async function startLiveNAV(kick){
   const val = document.getElementById('navBadgeVal');
   if(!badge || App.demo) return;
   try{
-    const data = await api('/api/nav/live?refresh='+(kick?'true':'false'));
+    const data = await api('/api/nav/live?refresh='+(kick?'true':'false'), { timeoutMs: 60000 });
     App.navs = Object.assign(App.navs||{}, data.navs||{});
     App.navProg = data.progress || {};
     const p = App.navProg;
@@ -1088,7 +1215,7 @@ async function startLiveNAV(kick){
     paintLiveNavCells();
     if(p.running){
       clearTimeout(App.navTimer);
-      App.navTimer = setTimeout(()=>startLiveNAV(false), 450);
+      App.navTimer = setTimeout(()=>startLiveNAV(false), 1200);
     }
   }catch(e){
     console.warn('[nav]', e);
@@ -1122,8 +1249,29 @@ async function loadRanking(animate){
       data = await api(`/api/rank?profile=${App.mode.profile}&category=${encodeURIComponent(App.category)}${n}${mh}`);
     }
   }catch(e){
-    if(!App.demo){ enableDemo(); buildControls(); renderGlossary(); data = demoRank(); }
-    else { renderError(e); return; }
+    // Cold start: retry a few times before falling back to demo
+    if(!App.demo){
+      setWakeBanner(true, 'Still loading rankings… '+e.message);
+      for(let i=0; i<4; i++){
+        await sleep(2000 + i*1000);
+        try{
+          if(App.mode.type === 'dial'){
+            data = await api(`/api/rank/dial?t=${App.mode.t}&category=${encodeURIComponent(App.category)}${App.filters.topN?`&n=${App.filters.topN}`:''}`);
+          } else {
+            const mh = App.filters.minHistory ? '&min_history=r5' : '';
+            const n = App.filters.topN ? `&n=${App.filters.topN}` : '';
+            data = await api(`/api/rank?profile=${App.mode.profile}&category=${encodeURIComponent(App.category)}${n}${mh}`);
+          }
+          setWakeBanner(false);
+          break;
+        }catch(e2){ e = e2; }
+      }
+    }
+    if(!data){
+      if(!App.demo){ enableDemo(); buildControls(); renderGlossary(); data = demoRank(); }
+      else { renderError(e); return; }
+    }
+    setWakeBanner(false);
   }
   ingestRanking(data, animate);
 }
@@ -1302,32 +1450,23 @@ document.getElementById('topN').addEventListener('click', e => {
   App.filters.topN = parseInt(b.dataset.n,10); loadRanking(true);
 });
 
-/* view toggle */
+/* view toggle — nav stays pinned in the top-left header */
 document.getElementById('viewToggle').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
   document.querySelectorAll('#viewToggle button').forEach(x=>x.setAttribute('aria-pressed','false'));
   b.setAttribute('aria-pressed','true');
   App.view = b.dataset.view;
-  document.getElementById('rankView').style.display = App.view==='rank' ? '' : 'none';
-  document.getElementById('glossView').style.display = App.view==='gloss' ? '' : 'none';
-  document.getElementById('overlapView').style.display = App.view==='overlap' ? 'block' : 'none';
-  document.getElementById('dataView').style.display = App.view==='data' ? '' : 'none';
-  // ranking controls only on Rankings
   const showRank = App.view === 'rank';
-  document.querySelectorAll('.controls, .weight-editor').forEach(el => {
-    el.style.display = showRank ? '' : 'none';
-  });
-  const fb = document.querySelector('.filterbar');
-  if(fb){
-    fb.querySelectorAll('.group, #rankMeta').forEach(el => {
-      el.style.display = showRank ? '' : 'none';
-    });
-  }
+  document.getElementById('rankView').style.display = showRank ? '' : 'none';
+  document.getElementById('glossView').style.display = App.view==='gloss' ? '' : 'none';
+  document.getElementById('overlapView').style.display = App.view==='overlap' ? 'flex' : 'none';
+  document.getElementById('dataView').style.display = App.view==='data' ? '' : 'none';
+  const chrome = document.getElementById('rankChrome');
+  if(chrome) chrome.style.display = showRank ? '' : 'none';
+  const we = document.getElementById('weightEditor');
+  if(we && !showRank) we.hidden = true;
   if(App.view === 'overlap') loadOverlap(true);
   if(App.view === 'data') loadDataStatus();
-  if(App.view === 'rank'){
-    document.getElementById('rankMeta').style.display = '';
-  }
 });
 
 /* ============================================================
@@ -1659,12 +1798,9 @@ async function loadOverlap(forceFunds){
     }
     showOverlapEmpty(false);
     const fundsQ = encodeURIComponent([...App.overlap.selected].join(','));
-    const [data, allData] = await Promise.all([
-      api(`/api/overlap?funds=${fundsQ}&min_funds=${App.overlap.minFunds}`),
-      api(`/api/overlap?funds=${fundsQ}&min_funds=1`),
-    ]);
+    const data = await api(`/api/overlap?funds=${fundsQ}&min_funds=${App.overlap.minFunds}`);
     App.overlap.companies = data.companies || [];
-    App.overlap.allCompanies = allData.companies || [];
+    App.overlap.allCompanies = data.all_companies || data.companies || [];
     App.overlap.pairwise = data.pairwise || [];
     App.overlap.status = data;
     document.getElementById('ovSource').textContent = data.source || '—';
@@ -1722,6 +1858,61 @@ function sortOverlapRows(rows){
   return list;
 }
 
+function selectedFundChipHtml(fundName){
+  return `<button type="button" class="ov-sel-chip" data-fund="${escapeHtml(fundName)}" title="Deselect ${escapeHtml(fundName)}">
+    <span class="ov-sel-name">${escapeHtml(shortFund(fundName))}</span><span class="ov-sel-x" aria-hidden="true">×</span>
+  </button>`;
+}
+
+function wireSelectedChips(root){
+  if(!root) return;
+  root.querySelectorAll('button.ov-sel-chip[data-fund]').forEach(btn => {
+    btn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleOverlapFund(btn.getAttribute('data-fund'), false);
+    };
+  });
+}
+
+function toggleOverlapFund(name, on){
+  if(!name) return;
+  const has = App.overlap.selected.has(name);
+  if(on === true) App.overlap.selected.add(name);
+  else if(on === false || has) App.overlap.selected.delete(name);
+  else App.overlap.selected.add(name);
+  renderOverlapFunds();
+  renderOverlapSummary();
+  updateOverlapToolbar();
+  loadOverlap(false);
+}
+
+function updateOverlapToolbar(){
+  const nSel = App.overlap.selected.size;
+  const sortMode = App.overlap.sortMode || 'common';
+  const maxMin = Math.max(2, nSel || 2);
+  document.querySelectorAll('#ovRankSort [data-ovsort]').forEach(btn => {
+    btn.setAttribute('aria-pressed', btn.dataset.ovsort === sortMode ? 'true' : 'false');
+  });
+  const inp = document.getElementById('ovMinFundsInput');
+  if(inp){
+    inp.max = String(maxMin);
+    if(+inp.value > maxMin) inp.value = String(maxMin);
+    if(App.overlap.minFunds > maxMin){
+      App.overlap.minFunds = maxMin;
+      document.getElementById('ovMinFunds').value = String(maxMin);
+    }
+  }
+  const hint = document.getElementById('ovRankHint');
+  if(hint){
+    hint.textContent = sortMode === 'common'
+      ? `Ranked by how many of your ${nSel} selected funds hold each stock.`
+      : sortMode === 'exposure'
+        ? 'Ranked by combined ₹ exposure (weight × AUM).'
+        : 'Ranked by average portfolio weight across funds that hold the stock.';
+  }
+}
+
 function renderOverlapSummary(){
   const nSel = App.overlap.selected.size;
   const rows = sortOverlapRows(App.overlap.companies || []);
@@ -1736,15 +1927,19 @@ function renderOverlapSummary(){
   const namesEl = document.getElementById('ovSelectedNames');
   if(namesEl){
     namesEl.innerHTML = funds.length
-      ? funds.map(f => `<span class="ov-sel-chip" title="${escapeHtml(f.fund)}">${escapeHtml(shortFund(f.fund))}</span>`).join('')
+      ? funds.map(f => selectedFundChipHtml(f.fund)).join('')
       : '<span style="font-size:11px;color:var(--faint)">None — tick funds on the left</span>';
+    wireSelectedChips(namesEl);
   }
   const mini = document.getElementById('ovSelectedMini');
+  const block = document.getElementById('ovSelectedBlock');
+  const countEl = document.getElementById('ovSelectedCount');
+  if(countEl) countEl.textContent = String(nSel);
   if(mini){
-    mini.innerHTML = funds.map(f =>
-      `<span class="ov-sel-chip" title="${escapeHtml(f.fund)}">${escapeHtml(shortFund(f.fund))}</span>`
-    ).join('');
+    mini.innerHTML = funds.map(f => selectedFundChipHtml(f.fund)).join('');
+    wireSelectedChips(mini);
   }
+  if(block) block.hidden = !funds.length;
   const crowdEl = document.getElementById('ovScCrowded');
   if(crowded){
     const pct = nSel ? Math.round((crowded.fund_count||0) / nSel * 100) : 0;
@@ -1764,6 +1959,7 @@ function renderOverlapSummary(){
     ? shortCompany(valuePick.company, 1) + ' (' + (+valuePick.pe).toFixed(1) + 'x)'
     : '—';
   document.getElementById('ovScValue').title = valuePick ? valuePick.company : '';
+  updateOverlapToolbar();
 }
 
 function renderOverlapFunds(){
@@ -1797,31 +1993,46 @@ function renderOverlapFunds(){
       <button type="button" class="ov-cat-all" data-cat="${escapeHtml(cat)}">All</button>
     </div>`;
     groups[cat].forEach(f => {
-      const row = document.createElement('label');
-      row.className = 'ov-fund-item';
+      const row = document.createElement('div');
       const checked = App.overlap.selected.has(f.fund);
+      row.className = 'ov-fund-item' + (checked ? ' is-on' : '');
       const aum = f.aum != null ? '₹' + Math.round(f.aum).toLocaleString('en-IN') + ' Cr' : 'AUM —';
       const nav = App.navs[f.fund];
       const navHtml = nav && nav.nav != null
         ? `<span class="navlive">₹${(+nav.nav).toFixed(2)}</span>`
         : '';
-      row.innerHTML = `<input type="checkbox" ${checked?'checked':''} />
-        <span class="ov-fund-info">
-          <span class="ov-fund-name">${escapeHtml(shortFund(f.fund))}</span>
-          <span class="ov-fund-meta">${aum}${navHtml ? ' · ' + navHtml : ''}</span>
-        </span>`;
-      row.querySelector('input').onchange = () => {
-        if(row.querySelector('input').checked) App.overlap.selected.add(f.fund);
+      row.innerHTML = `<label class="ov-fund-check" style="display:contents;cursor:pointer">
+          <input type="checkbox" ${checked?'checked':''} />
+          <span class="ov-fund-info">
+            <span class="ov-fund-name">${escapeHtml(shortFund(f.fund))}</span>
+            <span class="ov-fund-meta">${aum}${navHtml ? ' · ' + navHtml : ''}</span>
+          </span>
+        </label>
+        ${checked ? `<button type="button" class="ov-fund-desel" data-fund="${escapeHtml(f.fund)}">Deselect</button>` : ''}`;
+      const cb = row.querySelector('input');
+      cb.onchange = () => {
+        if(cb.checked) App.overlap.selected.add(f.fund);
         else App.overlap.selected.delete(f.fund);
+        renderOverlapFunds();
         renderOverlapSummary();
+        updateOverlapToolbar();
         loadOverlap(false);
       };
+      const desel = row.querySelector('.ov-fund-desel');
+      if(desel){
+        desel.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleOverlapFund(f.fund, false);
+        };
+      }
       block.appendChild(row);
     });
     block.querySelector('.ov-cat-all').onclick = (e) => {
       e.preventDefault();
       groups[cat].forEach(f => App.overlap.selected.add(f.fund));
       renderOverlapFunds();
+      renderOverlapSummary();
       loadOverlap(false);
     };
     box.appendChild(block);
@@ -1871,33 +2082,15 @@ function holdingsSourceNote(){
 function renderOverlapTable(){
   const host = document.getElementById('ovTabOverlap');
   const nSel = App.overlap.selected.size;
-  const sortMode = App.overlap.sortMode || 'common';
   const rows = sortOverlapRows(App.overlap.companies || []);
   const maxE = Math.max(...rows.map(c => c.est_money_cr || 0), 1);
-  const maxMin = Math.max(2, nSel || 2);
-  const sortHint = sortMode === 'common'
-    ? `Ranked by how many of your ${nSel} selected funds hold the stock (then avg weight). Select more funds to see true “most common” names.`
-    : sortMode === 'exposure'
-      ? 'Ranked by combined ₹ exposure (weight × AUM).'
-      : 'Ranked by average portfolio weight across funds that hold the stock.';
+  updateOverlapToolbar();
   host.innerHTML = `
     <div class="ov-note" id="ovDataNote">${holdingsSourceNote()}</div>
     <div class="ov-panel">
       <div class="ov-panel-hdr">
         <h3>Companies held across multiple funds <span>(${rows.length} stocks)</span></h3>
-        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-          <div class="ov-sort">
-            <span>Rank by</span>
-            <button type="button" data-ovsort="common" aria-pressed="${sortMode==='common'}">Most common</button>
-            <button type="button" data-ovsort="avg_weight" aria-pressed="${sortMode==='avg_weight'}">Avg weight</button>
-            <button type="button" data-ovsort="exposure" aria-pressed="${sortMode==='exposure'}">₹ exposure</button>
-          </div>
-          <label class="ov-min-ctl">Min funds
-            <input type="number" id="ovMinFundsInput" min="2" max="${maxMin}" value="${App.overlap.minFunds}" />
-          </label>
-        </div>
       </div>
-      <p style="margin:0;padding:0 16px 10px;font-size:11.5px;color:var(--faint)">${escapeHtml(sortHint)}</p>
       <div style="overflow:auto">
         <table class="ov-fl-table" aria-label="Company overlap">
           <thead><tr>
@@ -1935,21 +2128,6 @@ function renderOverlapTable(){
         </table>
       </div>
     </div>`;
-  const inp = document.getElementById('ovMinFundsInput');
-  if(inp){
-    inp.onchange = () => {
-      App.overlap.minFunds = Math.max(2, Math.min(maxMin, parseInt(inp.value,10)||2));
-      document.getElementById('ovMinFunds').value = String(App.overlap.minFunds);
-      loadOverlap(false);
-    };
-  }
-  host.querySelectorAll('[data-ovsort]').forEach(btn => {
-    btn.onclick = () => {
-      App.overlap.sortMode = btn.dataset.ovsort;
-      renderOverlapSummary();
-      renderOverlapTable();
-    };
-  });
   host.querySelectorAll('tr[data-key]').forEach(tr => {
     tr.onclick = () => openOverlapDrawer(tr.dataset.key, tr.dataset.name);
   });
@@ -2167,16 +2345,38 @@ async function openOverlapDrawer(key, name){
 document.getElementById('ovSelectAll').addEventListener('click', () => {
   App.overlap.funds.forEach(f => App.overlap.selected.add(f.fund));
   renderOverlapFunds();
+  renderOverlapSummary();
   loadOverlap(false);
 });
-document.getElementById('ovClearFunds').addEventListener('click', () => {
+function clearOverlapSelection(){
   App.overlap.selected.clear();
   renderOverlapFunds();
+  renderOverlapSummary();
   loadOverlap(false);
-});
+}
+document.getElementById('ovClearFunds').addEventListener('click', clearOverlapSelection);
+document.getElementById('ovClearSelectedTop').addEventListener('click', clearOverlapSelection);
 document.getElementById('ovFundSearch').addEventListener('input', e => {
   App.overlap.fundQuery = e.target.value || '';
   renderOverlapFunds();
+});
+document.querySelectorAll('#ovRankSort [data-ovsort]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    App.overlap.sortMode = btn.dataset.ovsort;
+    updateOverlapToolbar();
+    renderOverlapSummary();
+    if(App.overlap.tab === 'overlap') renderOverlapTable();
+    else if(App.overlap.tab === 'value') renderOverlapValue();
+  });
+});
+document.getElementById('ovMinFundsInput').addEventListener('change', () => {
+  const nSel = App.overlap.selected.size;
+  const maxMin = Math.max(2, nSel || 2);
+  const inp = document.getElementById('ovMinFundsInput');
+  App.overlap.minFunds = Math.max(2, Math.min(maxMin, parseInt(inp.value, 10) || 2));
+  inp.value = String(App.overlap.minFunds);
+  document.getElementById('ovMinFunds').value = String(App.overlap.minFunds);
+  loadOverlap(false);
 });
 document.querySelectorAll('.ov-tab').forEach(btn => {
   btn.addEventListener('click', () => setOverlapTab(btn.dataset.ovtab));

@@ -156,6 +156,7 @@ def compute_overlap(
     if prepared.empty:
         return {
             "companies": [],
+            "all_companies": [],
             "pairwise": [],
             "funds_used": [],
             "stats": {"rows": 0, "funds": 0, "companies": 0, "overlapping": 0},
@@ -227,6 +228,7 @@ def compute_overlap(
                                   -c["avg_weight"],
                                   -(c["est_money_cr"] or 0),
                                   -c["sum_weight"]))
+    all_companies = [c for c in companies if c["fund_count"] >= 1]
     overlapping = [c for c in companies if c["fund_count"] >= max(1, int(min_funds))]
 
     pairwise = _pairwise_overlap(per)
@@ -234,6 +236,7 @@ def compute_overlap(
 
     return {
         "companies": overlapping,
+        "all_companies": all_companies,
         "pairwise": pairwise,
         "funds_used": funds_used,
         "stats": {
